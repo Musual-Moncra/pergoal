@@ -39,7 +39,7 @@ Bộ test tập trung vào nghiệp vụ thuần, không phụ thuộc giao di�
 | `src/__tests__/BoKiemTraNangSuat.test.ts` | BR07: trần nhiệm vụ/ngày, trần giờ/tuần, ranh giới tuần thứ Hai – Chủ nhật, bỏ qua nhiệm vụ đã huỷ |
 | `src/__tests__/BoTinhHieuSuat.test.ts` | Tỉ lệ đúng hạn (kể cả mẫu số 0), nhiệm vụ trễ, chuỗi ngày có cập nhật, tiến độ trung bình |
 | `src/__tests__/TienDo.test.ts` | BR10, BR11: cập nhật phần trăm, hoàn thành, mở lại nhiệm vụ đã xong |
-| `src/domain/__tests__/NgayThang.test.ts` | Ngày địa phương và ranh giới tuần |
+| `src/domain/__tests__/NgayThang.test.ts` | Ngày địa phương (tránh lỗi lệch ngày do UTC) |
 
 ## 4. Cấu trúc mã nguồn
 
@@ -119,10 +119,20 @@ Workflow `.github/workflows/deploy.yml` chạy khi push lên nhánh `main` (ho�
 
 Cấu hình: `vite.config.ts` đặt `base: '/pergoal/'`, vì vậy repository phải có tên `pergoal` (hoặc sửa `base` cho khớp tên repository). Trong **Settings → Pages → Build and deployment**, chọn **Source: GitHub Actions**.
 
-Liên kết bản demo: cập nhật sau khi triển khai thật.
+- Bản demo: https://musual-moncra.github.io/pergoal/
+- Mã nguồn: https://github.com/Musual-Moncra/pergoal
 
 ## 9. Quy ước
 
 - Lớp nghiệp vụ dùng tên tiếng Việt không dấu đúng theo Bảng thuật ngữ và quy tắc: `MucTieu`, `MucNangSuat`, `NhiemVu`, `taoMucTieu`, `BoTinhHieuSuat`…
 - Component React dùng tiền tố `ManHinh*`; phần phụ trợ dùng tiếng Anh.
 - Không ghi tên thật, thông tin cá nhân, mật khẩu hay token vào mã nguồn.
+
+## 10. Ảnh chụp
+
+Ảnh từ bản demo với dữ liệu thử.
+
+![Mục tiêu và mức năng suất](docs/screenshots/app_02_muc_tieu.png)
+![Nhiệm vụ và tiến độ](docs/screenshots/app_03_nhiem_vu.png)
+![Cập nhật tiến độ](docs/screenshots/app_04_cap_nhat_tien_do.png)
+![Giao diện điện thoại](docs/screenshots/app_07_dien_thoai.png)
