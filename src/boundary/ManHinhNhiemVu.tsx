@@ -44,37 +44,31 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
     setLoiCoBan(null);
     setDanhSachViPhamHanMuc(null);
 
-    const kt = NhiemVuController.kiemTraTruocKhiTao(
-      tenDangNhap,
-      maMT,
-      ten,
-      hanChot,
-      uocLuongGio
-    );
-
-    if (!kt.hopLeCoBan) {
-      setLoiCoBan(kt.loiCoBan || 'Dữ liệu không hợp lệ.');
-      return;
-    }
-
-    if (kt.canhBaoHanMuc && kt.canhBaoHanMuc.length > 0) {
-      // Vi phạm BR08: Hiển thị hộp thoại cảnh báo để xác nhận ghi đè (BR09)
-      setDanhSachViPhamHanMuc(kt.canhBaoHanMuc);
-      return;
-    }
-
-    // Không vi phạm -> Tạo ngay
-    const res = NhiemVuController.thucHienTaoNhiemVu(
+    const res = NhiemVuController.taoNhiemVu(
       tenDangNhap,
       maMT,
       ten,
       moTa,
       hanChot,
       uuTien,
-      uocLuongGio,
-      false
+      uocLuongGio
     );
 
+    if (res.success) {
+      resetForm();
+      onDataChange();
+    } else {
+      if (res.canhBaoHanMuc && res.canhBaoHanMuc.length > 0) {
+        setDanhSachViPhamHanMuc(res.canhBaoHanMuc);
+      } else {
+        setLoiCoBan(res.message);
+      }
+    }
+  };
+
+  // Xác nhận ghi đè hạn mức BR09
+  const handleXacNhanGhiDe = () => {
+    const res = NhiemVuController.xacNhanVuotHanMuc(tenDangNhap, true);
     if (res.success) {
       resetForm();
       onDataChange();
@@ -83,28 +77,9 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
     }
   };
 
-  // Xác nhận ghi đè hạn mức BR09
-  const handleXacNhanGhiDe = () => {
-    if (!danhSachViPhamHanMuc) return;
-
-    const res = NhiemVuController.thucHienTaoNhiemVu(
-      tenDangNhap,
-      maMT,
-      ten,
-      moTa,
-      hanChot,
-      uuTien,
-      uocLuongGio,
-      true,
-      danhSachViPhamHanMuc
-    );
-
-    if (res.success) {
-      resetForm();
-      onDataChange();
-    } else {
-      setLoiCoBan(res.message);
-    }
+  const handleHuyGhiDe = () => {
+    NhiemVuController.xacNhanVuotHanMuc(tenDangNhap, false);
+    setDanhSachViPhamHanMuc(null);
   };
 
   const resetForm = () => {
@@ -392,7 +367,7 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                   Bạn có muốn ghi đè hạn mức để tiếp tục tạo nhiệm vụ này không? (Nếu đồng ý, nhiệm vụ sẽ được đánh dấu "Đã ghi đè hạn mức" và sinh thông báo nhắc nhở theo quy tắc BR09).
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                  <button type="button" className="btn btn-secondary" onClick={() => setDanhSachViPhamHanMuc(null)}>
+                  <button type="button" className="btn btn-secondary" onClick={handleHuyGhiDe}>
                     Hủy bỏ
                   </button>
                   <button type="button" className="btn btn-primary" style={{ background: '#d97706', borderColor: '#b45309' }} onClick={handleXacNhanGhiDe}>

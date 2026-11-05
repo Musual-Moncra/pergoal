@@ -87,16 +87,13 @@ describe('NhiemVuController - BR09 khi tạo nhiệm vụ', () => {
       ]
     );
 
-    const kt = NhiemVuController.kiemTraTruocKhiTao(
-      USER, 'mt1', 'NV mới', '2026-11-10', 1
+    const kqTao = NhiemVuController.taoNhiemVu(
+      USER, 'mt1', 'NV mới', '', '2026-11-10', 'TRUNG_BINH', 1
     );
-    expect(kt.hopLeCoBan).toBe(true);
-    expect(kt.canhBaoHanMuc).toHaveLength(2);
+    expect(kqTao.success).toBe(false);
+    expect(kqTao.canhBaoHanMuc).toHaveLength(2);
 
-    const kq = NhiemVuController.thucHienTaoNhiemVu(
-      USER, 'mt1', 'NV mới', '', '2026-11-10', 'TRUNG_BINH', 1,
-      true, kt.canhBaoHanMuc
-    );
+    const kq = NhiemVuController.xacNhanVuotHanMuc(USER, true);
     expect(kq.success).toBe(true);
 
     const data = KhoDuLieu.layDuLieu(USER);
