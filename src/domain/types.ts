@@ -4,9 +4,19 @@ export type TrangThaiMucTieu = 'DANG_THUC_HIEN' | 'TAM_DUNG' | 'HOAN_THANH' | 'D
 
 export type TrangThaiNhiemVu = 'CHUA_LAM' | 'DANG_LAM' | 'HOAN_THANH' | 'DA_HUY';
 
-export type LoaiHanMuc = 'DEADLINE' | 'NV_TOI_DA_NGAY' | 'GIO_TOI_DA_TUAN' | 'CHI_TIEU_DINH_LUONG';
+export interface MucNangSuat {
+  capDo: number; // 1..5
+  soNhiemVuToiDaNgay: number;
+  soGioToiDaTuan: number;
+}
 
-export type LoaiNhacNho = 'SAP_DEN_HAN' | 'QUA_HAN' | 'VUOT_HAN_MUC';
+export const BANG_MUC_NANG_SUAT: Record<number, MucNangSuat> = {
+  1: { capDo: 1, soNhiemVuToiDaNgay: 1, soGioToiDaTuan: 5 },
+  2: { capDo: 2, soNhiemVuToiDaNgay: 2, soGioToiDaTuan: 10 },
+  3: { capDo: 3, soNhiemVuToiDaNgay: 3, soGioToiDaTuan: 20 },
+  4: { capDo: 4, soNhiemVuToiDaNgay: 5, soGioToiDaTuan: 30 },
+  5: { capDo: 5, soNhiemVuToiDaNgay: 8, soGioToiDaTuan: 40 }
+};
 
 export interface NguoiDung {
   tenDangNhap: string;
@@ -16,22 +26,15 @@ export interface NguoiDung {
   salt: string;
 }
 
-export interface DanhMuc {
-  id: string;
-  ten: string;
-  mauSac: string;
-  tenDangNhap: string;
-}
-
 export interface MucTieu {
   id: string;
   ten: string;
   moTa: string;
-  maDanhMuc?: string | null;
-  ngayBatDau: string;
-  ngayKetThuc: string;
+  ngayBatDau: string; // YYYY-MM-DD
+  ngayKetThuc: string; // YYYY-MM-DD
   uuTien: UuTien;
   trangThai: TrangThaiMucTieu;
+  capDo: number; // 1..5, mặc định 3 (BR03, BR06)
   tenDangNhap: string;
 }
 
@@ -44,17 +47,9 @@ export interface NhiemVu {
   uuTien: UuTien;
   trangThai: TrangThaiNhiemVu;
   uocLuongGio: number;
+  phanTram: number; // 0..100
   ngayHoanThanh?: string | null; // YYYY-MM-DD
-  daGhiDeHanMuc: boolean;
-}
-
-export interface HanMuc {
-  id: string;
-  maMucTieu: string;
-  loai: LoaiHanMuc;
-  giaTri: number | string; // DEADLINE là YYYY-MM-DD, các loại khác là số
-  donVi: string;
-  ngayHieuLuc: string; // YYYY-MM-DD
+  daVuotMucNangSuat: boolean;
 }
 
 export interface BanGhiTienDo {
@@ -63,20 +58,7 @@ export interface BanGhiTienDo {
   ngayGhi: string; // YYYY-MM-DD
   phanTram: number; // 0..100
   soGioThucTe: number; // >= 0
-  giaTriDinhLuong?: number; // >= 0 khi ghi nhận chỉ tiêu
   ghiChu?: string;
-  maHanMuc?: string | null;
-}
-
-export interface NhacNho {
-  id: string;
-  tenDangNhap: string;
-  loai: LoaiNhacNho;
-  noiDung: string;
-  thoiDiemTao: string; // ISO string
-  daDoc: boolean;
-  maNhiemVu?: string | null;
-  maHanMuc?: string | null;
 }
 
 export interface BaoCaoHieuSuat {
@@ -85,12 +67,21 @@ export interface BaoCaoHieuSuat {
   tiLeDungHan: number | null; // null nếu mẫu số = 0
   soDungHan: number;
   soNhiemVuTre: number;
-  phanTramDatChiTieu: number | null; // null nếu không có chỉ tiêu
   chuoiNgayLienTuc: number;
+  tienDoTrungBinh: number | null; // null nếu tập rỗng
 }
 
-export interface KetQuaKiemTraHanMuc {
+export interface KetQuaKiemTraNangSuat {
   hopLe: boolean;
   danhSachViPham: string[];
-  maHanMucViPham: string[];
+}
+
+/**
+ * Lấy ngày theo múi giờ địa phương định dạng YYYY-MM-DD
+ */
+export function ngayDiaPhuong(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }

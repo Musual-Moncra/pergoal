@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TaiKhoanController } from '../controller/TaiKhoanController';
 import { NguoiDung } from '../domain/types';
-import { ShieldCheck, UserCheck, KeyRound, AlertCircle, Info } from 'lucide-react';
+import { Zap, KeyRound, AlertCircle, CheckCircle, Info } from 'lucide-react';
 
 interface Props {
   onDangNhapThanhCong: (user: NguoiDung) => void;
@@ -57,26 +57,25 @@ export const ManHinhTaiKhoan: React.FC<Props> = ({ onDangNhapThanhCong }) => {
   return (
     <div style={{ maxWidth: '440px', margin: '40px auto', padding: '0 16px' }}>
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{ display: 'inline-flex', padding: '12px', background: '#dbeafe', borderRadius: '16px', color: '#2563eb', marginBottom: '12px' }}>
-          <ShieldCheck size={40} />
+        <div style={{ display: 'inline-flex', padding: '12px', background: '#eff6ff', borderRadius: '16px', color: '#2563eb', marginBottom: '12px' }}>
+          <Zap size={40} />
         </div>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#1e293b' }}>Pergoal</h1>
         <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>
-          Hệ thống Quản lý Mục tiêu Cá nhân với Hạn mức & Hiệu suất
+          Quản lý mục tiêu cá nhân, mức năng suất và hiệu suất thực tế
         </p>
       </div>
 
-      {/* Thông báo minh bạch theo yêu cầu Brief */}
       <div className="alert alert-info" style={{ flexDirection: 'column', gap: '6px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
           <Info size={18} />
-          <span>Lưu ý về bản Demo:</span>
+          <span>Lưu ý về tài khoản và dữ liệu:</span>
         </div>
         <ul style={{ paddingLeft: '20px', fontSize: '0.825rem', lineHeight: 1.6 }}>
-          <li>Tài khoản được lưu trữ <strong>cục bộ trên trình duyệt</strong> của thiết bị này.</li>
-          <li>Mọi dữ liệu mục tiêu, nhiệm vụ lưu ở <strong>localStorage</strong>.</li>
-          <li>Mật khẩu được băm chuẩn <strong>PBKDF2 (SHA-256) với muối (salt)</strong> bằng WebCrypto API.</li>
-          <li>Hệ thống nhắc nhở chỉ hoạt động <strong>khi tab trình duyệt đang mở</strong>.</li>
+          <li>Tài khoản được lưu <strong>cục bộ trên trình duyệt</strong> của thiết bị này.</li>
+          <li>Dữ liệu mục tiêu, nhiệm vụ và tiến độ chỉ nằm trong bộ nhớ máy của bạn.</li>
+          <li>Mật khẩu được băm an toàn với muối (salt) bằng WebCrypto API.</li>
+          <li>Nếu bạn xóa dữ liệu duyệt web, dữ liệu ứng dụng sẽ bị xóa theo.</li>
         </ul>
       </div>
 
@@ -125,7 +124,7 @@ export const ManHinhTaiKhoan: React.FC<Props> = ({ onDangNhapThanhCong }) => {
 
         {thanhCong && (
           <div className="alert alert-success">
-            <UserCheck size={18} />
+            <CheckCircle size={18} />
             <span>{thanhCong}</span>
           </div>
         )}
@@ -162,13 +161,13 @@ export const ManHinhTaiKhoan: React.FC<Props> = ({ onDangNhapThanhCong }) => {
             <input
               type="password"
               className="form-input"
-              placeholder="Tối thiểu 8 ký tự (BR01)"
+              placeholder="Tối thiểu 8 ký tự"
               value={matKhau}
               onChange={e => setMatKhau(e.target.value)}
               required
             />
             {isDangKy && (
-              <div className="form-hint">Mật khẩu phải chứa ít nhất 8 ký tự theo quy tắc BR01.</div>
+              <div className="form-hint">Mật khẩu phải chứa ít nhất 8 ký tự.</div>
             )}
           </div>
 

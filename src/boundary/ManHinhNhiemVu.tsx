@@ -1,34 +1,31 @@
 import React, { useState } from 'react';
-import { MucTieu, NhiemVu, UuTien, TrangThaiNhiemVu } from '../domain/types';
+import { MucTieu, NhiemVu, BanGhiTienDo, UuTien, TrangThaiNhiemVu } from '../domain/types';
 import { NhiemVuController } from '../controller/NhiemVuController';
-import { TienDoController } from '../controller/TienDoController';
-import { CheckSquare, Plus, AlertTriangle, CheckCircle2, Clock, Trash2, XCircle, Edit3 } from 'lucide-react';
+import { CheckSquare, Plus, AlertTriangle, CheckCircle2, Trash2, XCircle, Edit3, Sliders, History, Calendar, Clock } from 'lucide-react';
 import { ngayDiaPhuong } from '../domain/NgayThang';
 
 interface Props {
   tenDangNhap: string;
   mucTieus: MucTieu[];
   nhiemVus: NhiemVu[];
+  banGhiTienDos?: BanGhiTienDo[];
   selectedMucTieuId?: string;
   onDataChange: () => void;
-  onOpenCapNhatTienDo: (nv: NhiemVu) => void;
 }
 
 export const ManHinhNhiemVu: React.FC<Props> = ({
   tenDangNhap,
   mucTieus,
   nhiemVus,
+  banGhiTienDos = [],
   selectedMucTieuId,
-  onDataChange,
-  onOpenCapNhatTienDo
+  onDataChange
 }) => {
   const [filterMucTieu, setFilterMucTieu] = useState<string>(selectedMucTieuId || 'ALL');
   const [filterTrangThai, setFilterTrangThai] = useState<string>('ALL');
 
+  // Modal tạo nhiệm vụ
   const [showTaoModal, setShowTaoModal] = useState(false);
-  const [editingNV, setEditingNV] = useState<NhiemVu | null>(null);
-
-  // Form tạo nhiệm vụ
   const [maMT, setMaMT] = useState(selectedMucTieuId || (mucTieus[0]?.id || ''));
   const [ten, setTen] = useState('');
   const [moTa, setMoTa] = useState('');
@@ -36,14 +33,26 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
   const [uuTien, setUuTien] = useState<UuTien>('TRUNG_BINH');
   const [uocLuongGio, setUocLuongGio] = useState<number>(2);
 
-  // Cảnh báo lỗi và cảnh báo vượt hạn mức (BR08, BR09)
+  // Cảnh báo tạo nhiệm vụ
   const [loiCoBan, setLoiCoBan] = useState<string | null>(null);
-  const [danhSachViPhamHanMuc, setDanhSachViPhamHanMuc] = useState<string[] | null>(null);
+  const [danhSachViPhamNangSuat, setDanhSachViPhamNangSuat] = useState<string[] | null>(null);
+
+  // Modal sửa nhiệm vụ
+  const [editingNV, setEditingNV] = useState<NhiemVu | null>(null);
+
+  // Modal cập nhật tiến độ in-place
+  const [progressNV, setProgressNV] = useState<NhiemVu | null>(null);
+  const [progressValue, setProgressValue] = useState<number>(0);
+  const [progressHours, setProgressHours] = useState<number>(0);
+  const [progressNote, setProgressNote] = useState<string>('');
+  const [progressError, setProgressError] = useState<string | null>(null);
+
+  const homNay = ngayDiaPhuong();
 
   const handleKiemTraVaTao = (e: React.FormEvent) => {
     e.preventDefault();
     setLoiCoBan(null);
-    setDanhSachViPhamHanMuc(null);
+    setDanhSachViPhamNangSuat(null);
 
     const res = NhiemVuController.taoNhiemVu(
       tenDangNhap,
@@ -52,49 +61,113 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
       moTa,
       hanChot,
       uuTien,
-      uocLuongGio
+      Number(uocLuongGio)
     );
 
     if (res.success) {
-      resetForm();
+      resetTaoForm();
       onDataChange();
     } else {
-      if (res.canhBaoHanMuc && res.canhBaoHanMuc.length > 0) {
-        setDanhSachViPhamHanMuc(res.canhBaoHanMuc);
+      if (res.canhBaoVuotMuc && res.canhBaoVuotMuc.length > 0) {
+        setDanhSachViPhamNangSuat(res.canhBaoVuotMuc);
       } else {
         setLoiCoBan(res.message);
       }
     }
   };
 
-  // Xác nhận ghi đè hạn mức BR09
-  const handleXacNhanGhiDe = () => {
-    const res = NhiemVuController.xacNhanVuotHanMuc(tenDangNhap, true);
+  // Xác nhận vượt mức năng suất khi tạo
+  const handleXacNhanTaoVuotMuc = () => {
+    const res = NhiemVuController.xacNhanVuotMuc(tenDangNhap, true);
     if (res.success) {
-      resetForm();
+      resetTaoForm();
       onDataChange();
     } else {
       setLoiCoBan(res.message);
     }
   };
 
-  const handleHuyGhiDe = () => {
-    NhiemVuController.xacNhanVuotHanMuc(tenDangNhap, false);
-    setDanhSachViPhamHanMuc(null);
+  const handleHuyTaoVuotMuc = () => {
+    NhiemVuController.xacNhanVuotMuc(tenDangNhap, false);
+    setDanhSachViPhamNangSuat(null);
   };
 
-  const resetForm = () => {
+  const resetTaoForm = () => {
     setShowTaoModal(false);
-    setDanhSachViPhamHanMuc(null);
+    setDanhSachViPhamNangSuat(null);
     setLoiCoBan(null);
     setTen('');
     setMoTa('');
     setUocLuongGio(2);
   };
 
+  // Hoàn thành một chạm (100%)
   const handleHoanThanhNhanh = (nv: NhiemVu) => {
-    const res = TienDoController.hoanThanhNhiemVu(tenDangNhap, nv.id);
+    const res = NhiemVuController.capNhatTienDo(tenDangNhap, nv.id, 100);
     if (res.success) {
+      onDataChange();
+    } else {
+      alert(res.message);
+    }
+  };
+
+  // Mở modal cập nhật tiến độ
+  const handleOpenProgressModal = (nv: NhiemVu) => {
+    setProgressNV(nv);
+    setProgressValue(nv.phanTram); // Thanh kéo bắt đầu từ % hiện tại
+    setProgressHours(0);
+    setProgressNote('');
+    setProgressError(null);
+  };
+
+  // Lưu tiến độ từ modal
+  const handleSaveProgress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!progressNV) return;
+
+    const res = NhiemVuController.capNhatTienDo(
+      tenDangNhap,
+      progressNV.id,
+      Number(progressValue),
+      Number(progressHours),
+      progressNote
+    );
+
+    if (res.success) {
+      setProgressNV(null);
+      onDataChange();
+    } else {
+      setProgressError(res.message);
+    }
+  };
+
+  // Sửa nhiệm vụ
+  const handleCapNhatNV = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingNV) return;
+
+    const thongTinMoi = {
+      ten: editingNV.ten,
+      moTa: editingNV.moTa,
+      hanChot: editingNV.hanChot,
+      uuTien: editingNV.uuTien,
+      uocLuongGio: Number(editingNV.uocLuongGio)
+    };
+
+    let res = NhiemVuController.capNhatNhiemVu(tenDangNhap, editingNV.id, thongTinMoi);
+
+    if (!res.success && res.canhBaoVuotMuc && res.canhBaoVuotMuc.length > 0) {
+      const dongY = confirm(
+        'Thay đổi này vượt mức năng suất của mục tiêu:\n- ' +
+          res.canhBaoVuotMuc.join('\n- ') +
+          '\n\nBạn có muốn xác nhận và lưu tiếp tục không?'
+      );
+      if (!dongY) return;
+      res = NhiemVuController.capNhatNhiemVu(tenDangNhap, editingNV.id, { ...thongTinMoi }, true);
+    }
+
+    if (res.success) {
+      setEditingNV(null);
       onDataChange();
     } else {
       alert(res.message);
@@ -109,55 +182,47 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
   };
 
   const handleXoaNhiemVu = (nv: NhiemVu) => {
-    if (confirm(`Xóa hoàn toàn nhiệm vụ "${nv.ten}"?`)) {
+    if (confirm(`Xóa hoàn toàn nhiệm vụ "${nv.ten}" cùng lịch sử tiến độ liên quan?`)) {
       NhiemVuController.xoaNhiemVu(tenDangNhap, nv.id);
       onDataChange();
     }
   };
 
-  const handleCapNhatNV = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingNV) return;
-
-    const thongTinMoi = {
-      ten: editingNV.ten,
-      moTa: editingNV.moTa,
-      hanChot: editingNV.hanChot,
-      uuTien: editingNV.uuTien,
-      uocLuongGio: editingNV.uocLuongGio
-    };
-    let res = NhiemVuController.capNhatNhiemVu(tenDangNhap, editingNV.id, thongTinMoi);
-
-    // BR09: vi phạm hạn mức thì chưa ghi gì, chỉ ghi đè khi người dùng xác nhận
-    if (!res.success && res.canhBaoHanMuc && res.canhBaoHanMuc.length > 0) {
-      const dongY = confirm(
-        'Thay đổi này vi phạm hạn mức:\n' + res.canhBaoHanMuc.join('\n') + '\n\nVẫn lưu và ghi đè hạn mức?'
-      );
-      if (!dongY) return;
-      res = NhiemVuController.capNhatNhiemVu(tenDangNhap, editingNV.id, { ...thongTinMoi }, true);
-    }
-
-    if (res.success) {
-      setEditingNV(null);
-      onDataChange();
-    } else {
-      alert(res.message);
-    }
-  };
-
-  const homNay = ngayDiaPhuong();
-
   const filteredNhiemVus = nhiemVus.filter(nv => {
     if (filterMucTieu !== 'ALL' && nv.maMucTieu !== filterMucTieu) return false;
     if (filterTrangThai !== 'ALL') {
       if (filterTrangThai === 'TRE') {
-        // Suy ra: chưa hoàn thành và hanChot < homNay
         return nv.trangThai !== 'HOAN_THANH' && nv.trangThai !== 'DA_HUY' && nv.hanChot < homNay;
       }
       return nv.trangThai === filterTrangThai;
     }
     return true;
   });
+
+  const getTrangThaiText = (trangThai: TrangThaiNhiemVu, isTre: boolean) => {
+    if (trangThai === 'DA_HUY') return 'Đã hủy';
+    if (trangThai === 'HOAN_THANH') return 'Hoàn thành';
+    if (isTre) return 'Đang trễ hạn';
+    if (trangThai === 'DANG_LAM') return 'Đang làm';
+    return 'Chưa làm';
+  };
+
+  const getTrangThaiBadgeClass = (trangThai: TrangThaiNhiemVu, isTre: boolean) => {
+    if (trangThai === 'HOAN_THANH') return 'badge-success';
+    if (trangThai === 'DA_HUY') return 'badge-secondary';
+    if (isTre) return 'badge-danger';
+    if (trangThai === 'DANG_LAM') return 'badge-primary';
+    return 'badge-warning';
+  };
+
+  const getUuTienText = (uuTien: UuTien) => {
+    if (uuTien === 'CAO') return 'Cao';
+    if (uuTien === 'TRUNG_BINH') return 'Trung bình';
+    return 'Thấp';
+  };
+
+  // Mục tiêu khả dụng để tạo nhiệm vụ (chưa hoàn thành và chưa hủy)
+  const mucTieuKhaDung = mucTieus.filter(mt => mt.trangThai !== 'HOAN_THANH' && mt.trangThai !== 'DA_HUY');
 
   return (
     <div>
@@ -167,18 +232,18 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
             <CheckSquare size={24} color="#2563eb" />
             <span>Danh sách Nhiệm vụ ({filteredNhiemVus.length})</span>
           </h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem' }}>Theo dõi đầu việc, kiểm soát hạn chót và phát hiện vượt hạn mức</p>
+          <p style={{ color: '#64748b', fontSize: '0.85rem' }}>Theo dõi đầu việc, cập nhật tiến độ trực tiếp và kiểm soát hạn mức</p>
         </div>
         <button
           className="btn btn-primary"
           onClick={() => {
-            if (mucTieus.length === 0) {
-              alert('Vui lòng tạo ít nhất 1 Mục tiêu trước khi tạo Nhiệm vụ!');
+            if (mucTieuKhaDung.length === 0) {
+              alert('Không có mục tiêu nào đang thực hiện để thêm nhiệm vụ mới.');
               return;
             }
-            setMaMT(selectedMucTieuId || mucTieus[0].id);
+            setMaMT(selectedMucTieuId || mucTieuKhaDung[0].id);
             setLoiCoBan(null);
-            setDanhSachViPhamHanMuc(null);
+            setDanhSachViPhamNangSuat(null);
             setShowTaoModal(true);
           }}
         >
@@ -235,101 +300,150 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
           <table>
             <thead>
               <tr>
-                <th>Tên nhiệm vụ</th>
+                <th style={{ minWidth: '180px' }}>Tên nhiệm vụ</th>
                 <th>Mục tiêu</th>
                 <th>Hạn chót</th>
                 <th>Ước lượng</th>
                 <th>Ưu tiên</th>
+                <th style={{ minWidth: '150px' }}>Tiến độ</th>
                 <th>Trạng thái</th>
-                <th>Thao tác</th>
+                <th style={{ minWidth: '160px', textAlign: 'right' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredNhiemVus.map(nv => {
                 const mt = mucTieus.find(m => m.id === nv.maMucTieu);
                 const isTre = nv.trangThai !== 'HOAN_THANH' && nv.trangThai !== 'DA_HUY' && nv.hanChot < homNay;
+                const isCompleted = nv.trangThai === 'HOAN_THANH';
+                const isCancelled = nv.trangThai === 'DA_HUY';
 
                 return (
-                  <tr key={nv.id}>
+                  <tr key={nv.id} style={{ opacity: isCancelled ? 0.6 : 1 }}>
                     <td>
-                      <div style={{ fontWeight: 600, color: '#1e293b' }}>{nv.ten}</div>
-                      {nv.moTa && <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{nv.moTa}</div>}
-                      {nv.daGhiDeHanMuc && (
-                        <span className="tag tag-yellow" style={{ marginTop: '4px', fontSize: '0.7rem' }}>
-                          <AlertTriangle size={10} style={{ marginRight: '2px' }} />
-                          Ghi đè hạn mức
+                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{nv.ten}</div>
+                      {nv.moTa && <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>{nv.moTa}</div>}
+                      {nv.daVuotMucNangSuat && (
+                        <span
+                          className="badge"
+                          style={{
+                            background: '#fef3c7',
+                            color: '#b45309',
+                            border: '1px solid #fde68a',
+                            fontSize: '0.72rem',
+                            marginTop: '4px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '3px'
+                          }}
+                        >
+                          ⚡ Vượt mức
                         </span>
                       )}
                     </td>
+
                     <td>
-                      <span style={{ fontSize: '0.85rem', color: '#475569' }}>{mt?.ten || '(Mục tiêu đã xoá)'}</span>
+                      <span style={{ fontSize: '0.85rem', color: '#334155', fontWeight: 500 }}>
+                        {mt ? mt.ten : '—'}
+                      </span>
                     </td>
+
                     <td>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: isTre ? '#dc2626' : '#1e293b' }}>
-                        {nv.hanChot}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}>
+                        <Calendar size={14} color="#64748b" />
+                        <span style={{ color: isTre ? '#dc2626' : '#334155', fontWeight: isTre ? 600 : 400 }}>
+                          {nv.hanChot}
+                        </span>
                       </div>
-                      {isTre && (
-                        <span className="tag tag-red" style={{ fontSize: '0.7rem' }}>Trễ hạn</span>
-                      )}
-                      {nv.ngayHoanThanh && (
-                        <div style={{ fontSize: '0.75rem', color: '#059669' }}>Xong: {nv.ngayHoanThanh}</div>
-                      )}
                     </td>
+
                     <td>
-                      <span style={{ fontSize: '0.85rem' }}>{nv.uocLuongGio} giờ</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}>
+                        <Clock size={14} color="#64748b" />
+                        <span>{nv.uocLuongGio}h</span>
+                      </div>
                     </td>
+
                     <td>
-                      <span className={`tag ${nv.uuTien === 'CAO' ? 'tag-red' : nv.uuTien === 'TRUNG_BINH' ? 'tag-blue' : 'tag-gray'}`}>
-                        {nv.uuTien}
+                      <span className={`badge ${nv.uuTien === 'CAO' ? 'badge-danger' : nv.uuTien === 'TRUNG_BINH' ? 'badge-primary' : 'badge-secondary'}`}>
+                        {getUuTienText(nv.uuTien)}
                       </span>
                     </td>
+
                     <td>
-                      <span className={`tag ${nv.trangThai === 'HOAN_THANH' ? 'tag-green' : nv.trangThai === 'DANG_LAM' ? 'tag-blue' : nv.trangThai === 'CHUA_LAM' ? 'tag-yellow' : 'tag-gray'}`}>
-                        {nv.trangThai}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className="progress-bar-container" style={{ flex: 1, minWidth: '70px', height: '8px' }}>
+                          <div
+                            className={`progress-bar-fill ${isCompleted ? 'success' : ''}`}
+                            style={{ width: `${nv.phanTram}%` }}
+                          />
+                        </div>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 600, minWidth: '35px', textAlign: 'right' }}>
+                          {nv.phanTram}%
+                        </span>
+                      </div>
+                    </td>
+
+                    <td>
+                      <span className={`badge ${getTrangThaiBadgeClass(nv.trangThai, isTre)}`}>
+                        {getTrangThaiText(nv.trangThai, isTre)}
                       </span>
                     </td>
+
                     <td>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {nv.trangThai !== 'HOAN_THANH' && nv.trangThai !== 'DA_HUY' && (
-                          <>
-                            <button
-                              className="btn btn-sm btn-success"
-                              title="Hoàn thành nhanh (100%)"
-                              onClick={() => handleHoanThanhNhanh(nv)}
-                            >
-                              <CheckCircle2 size={14} />
-                            </button>
-                            <button
-                              className="btn btn-sm btn-primary"
-                              title="Cập nhật tiến độ / giờ thực tế"
-                              onClick={() => onOpenCapNhatTienDo(nv)}
-                            >
-                              <Clock size={14} />
-                            </button>
-                          </>
-                        )}
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          title="Sửa"
-                          onClick={() => setEditingNV(nv)}
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                        {nv.trangThai !== 'DA_HUY' && (
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        {/* Nút cập nhật tiến độ mở modal tại chỗ */}
+                        {!isCancelled && (
                           <button
-                            className="btn btn-sm btn-secondary"
-                            title="Hủy nhiệm vụ"
-                            onClick={() => handleHuyNhiemVu(nv)}
+                            className="btn btn-secondary"
+                            style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleOpenProgressModal(nv)}
+                            title="Cập nhật tiến độ nhiệm vụ này"
                           >
-                            <XCircle size={14} />
+                            <Sliders size={13} />
+                            <span>Tiến độ</span>
                           </button>
                         )}
+
+                        {/* Nút một chạm hoàn thành */}
+                        {!isCancelled && !isCompleted && (
+                          <button
+                            className="btn btn-success"
+                            style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => handleHoanThanhNhanh(nv)}
+                            title="Đánh dấu hoàn thành ngay (100%)"
+                          >
+                            <CheckCircle2 size={13} />
+                            <span>Xong</span>
+                          </button>
+                        )}
+
                         <button
-                          className="btn btn-sm btn-danger"
-                          title="Xóa"
-                          onClick={() => handleXoaNhiemVu(nv)}
+                          className="btn btn-secondary"
+                          style={{ padding: '4px 8px', fontSize: '0.8rem' }}
+                          onClick={() => setEditingNV({ ...nv })}
+                          title="Sửa thông tin nhiệm vụ"
                         >
-                          <Trash2 size={14} />
+                          <Edit3 size={13} />
+                        </button>
+
+                        {!isCancelled && (
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '4px 8px', fontSize: '0.8rem', color: '#b45309' }}
+                            onClick={() => handleHuyNhiemVu(nv)}
+                            title="Hủy nhiệm vụ"
+                          >
+                            <XCircle size={13} />
+                          </button>
+                        )}
+
+                        <button
+                          className="btn btn-secondary"
+                          style={{ padding: '4px 8px', fontSize: '0.8rem', color: '#dc2626' }}
+                          onClick={() => handleXoaNhiemVu(nv)}
+                          title="Xóa nhiệm vụ"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </td>
@@ -341,49 +455,191 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Modal Tạo Nhiệm vụ (UC07) */}
-      {showTaoModal && (
+      {/* Modal Cập nhật tiến độ tại chỗ */}
+      {progressNV && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3 className="modal-title">Tạo nhiệm vụ mới</h3>
-              <button className="btn btn-sm btn-secondary" onClick={resetForm}>✕</button>
+          <div className="modal-content" style={{ maxWidth: '520px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sliders size={20} color="#2563eb" />
+                  <span>Cập nhật tiến độ</span>
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
+                  Nhiệm vụ: <strong>{progressNV.ten}</strong>
+                </p>
+              </div>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '4px 8px', border: 'none', background: 'transparent' }}
+                onClick={() => setProgressNV(null)}
+              >
+                ✕
+              </button>
             </div>
 
-            {loiCoBan && (
-              <div className="alert alert-danger">
-                <span>{loiCoBan}</span>
+            {progressError && (
+              <div className="alert alert-danger" style={{ marginBottom: '14px', fontSize: '0.85rem' }}>
+                {progressError}
               </div>
             )}
 
-            {/* Hộp thoại CẢNH BÁO VƯỢT HẠN MỨC (BR08, BR09) */}
-            {danhSachViPhamHanMuc ? (
-              <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#b45309', fontWeight: 700, marginBottom: '8px' }}>
-                  <AlertTriangle size={20} />
-                  <span>CẢNH BÁO VI PHẠM HẠN MỨC (BR08, BR09)</span>
+            <form onSubmit={handleSaveProgress}>
+              {/* Thanh kéo tiến độ (bắt đầu từ % hiện tại) */}
+              <div className="form-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Mức tiến độ hoàn thành:</label>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#2563eb' }}>
+                    {progressValue}%
+                  </span>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: '#92400e', marginBottom: '10px' }}>
-                  Nhiệm vụ bạn dự định tạo vi phạm các giới hạn hạn mức sau:
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  value={progressValue}
+                  onChange={e => setProgressValue(Number(e.target.value))}
+                  style={{ width: '100%', cursor: 'pointer' }}
+                />
+
+                {/* Các nút chọn nhanh */}
+                <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                  {[0, 25, 50, 75, 100].map(val => (
+                    <button
+                      key={val}
+                      type="button"
+                      className={`btn ${progressValue === val ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '4px 0', fontSize: '0.8rem' }}
+                      onClick={() => setProgressValue(val)}
+                    >
+                      {val}%
+                    </button>
+                  ))}
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block', marginTop: '6px' }}>
+                  * Lưu ý: Đưa về 100% đánh dấu hoàn thành; hạ tiến độ dưới 100% sẽ mở lại nhiệm vụ.
+                </span>
+              </div>
+
+              {/* Số giờ thực tế */}
+              <div className="form-group">
+                <label className="form-label">Số giờ thực tế làm việc (lần này):</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  min="0"
+                  step="any"
+                  value={progressHours}
+                  onChange={e => setProgressHours(Number(e.target.value))}
+                  placeholder="Ví dụ: 1.5"
+                />
+              </div>
+
+              {/* Ghi chú */}
+              <div className="form-group">
+                <label className="form-label">Ghi chú tiến độ:</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={progressNote}
+                  onChange={e => setProgressNote(e.target.value)}
+                  placeholder="Ghi chú nội dung đã hoàn thành..."
+                />
+              </div>
+
+              {/* Lịch sử cập nhật của chính nhiệm vụ này */}
+              <div style={{ marginTop: '16px', marginBottom: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                <h4 style={{ fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', marginBottom: '8px' }}>
+                  <History size={15} />
+                  <span>Lịch sử cập nhật của nhiệm vụ này</span>
+                </h4>
+                {(() => {
+                  const lichSu = banGhiTienDos
+                    .filter(bg => bg.maNhiemVu === progressNV.id)
+                    .sort((a, b) => (b.ngayGhi > a.ngayGhi ? 1 : b.ngayGhi < a.ngayGhi ? -1 : 0));
+
+                  if (lichSu.length === 0) {
+                    return (
+                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                        Chưa có lượt cập nhật nào trước đây.
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <div style={{ maxHeight: '130px', overflowY: 'auto', fontSize: '0.8rem', background: '#f8fafc', borderRadius: '6px', padding: '6px 10px', border: '1px solid #e2e8f0' }}>
+                      {lichSu.map(bg => (
+                        <div key={bg.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px dashed #e2e8f0' }}>
+                          <div>
+                            <span style={{ fontWeight: 600, color: '#334155' }}>{bg.ngayGhi}:</span>{' '}
+                            <span>{bg.phanTram}%</span>
+                            {bg.soGioThucTe > 0 && <span style={{ color: '#64748b' }}> (+{bg.soGioThucTe}h)</span>}
+                            {bg.ghiChu && <div style={{ color: '#64748b', fontSize: '0.75rem' }}>{bg.ghiChu}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setProgressNV(null)}
+                >
+                  Đóng
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Lưu tiến độ
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Tạo nhiệm vụ */}
+      {showTaoModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '520px' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '16px' }}>Tạo nhiệm vụ mới</h3>
+
+            {loiCoBan && (
+              <div className="alert alert-danger" style={{ marginBottom: '14px', fontSize: '0.85rem' }}>
+                {loiCoBan}
+              </div>
+            )}
+
+            {/* Cảnh báo vượt mức năng suất */}
+            {danhSachViPhamNangSuat && (
+              <div className="alert alert-warning" style={{ marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, marginBottom: '6px' }}>
+                  <AlertTriangle size={18} color="#b45309" />
+                  <span>Cảnh báo vượt mức năng suất!</span>
+                </div>
+                <p style={{ fontSize: '0.85rem', marginBottom: '8px' }}>
+                  Nhiệm vụ này sẽ làm vượt mức năng suất cam kết của mục tiêu:
                 </p>
-                <ul style={{ paddingLeft: '20px', fontSize: '0.825rem', color: '#b45309', marginBottom: '16px', lineHeight: 1.5 }}>
-                  {danhSachViPhamHanMuc.map((vp, i) => (
-                    <li key={i}>{vp}</li>
+                <ul style={{ margin: '0 0 12px 18px', fontSize: '0.82rem', lineHeight: 1.4 }}>
+                  {danhSachViPhamNangSuat.map((vp, idx) => (
+                    <li key={idx}>{vp}</li>
                   ))}
                 </ul>
-                <p style={{ fontSize: '0.8rem', color: '#78350f', marginBottom: '16px', fontStyle: 'italic' }}>
-                  Bạn có muốn ghi đè hạn mức để tiếp tục tạo nhiệm vụ này không? (Nếu đồng ý, nhiệm vụ sẽ được đánh dấu "Đã ghi đè hạn mức" và sinh thông báo nhắc nhở theo quy tắc BR09).
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                  <button type="button" className="btn btn-secondary" onClick={handleHuyGhiDe}>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-secondary" onClick={handleHuyTaoVuotMuc}>
                     Hủy bỏ
                   </button>
-                  <button type="button" className="btn btn-primary" style={{ background: '#d97706', borderColor: '#b45309' }} onClick={handleXacNhanGhiDe}>
-                    Xác nhận ghi đè hạn mức
+                  <button type="button" className="btn btn-primary" onClick={handleXacNhanTaoVuotMuc}>
+                    Xác nhận tạo (Chấp nhận vượt mức)
                   </button>
                 </div>
               </div>
-            ) : (
+            )}
+
+            {!danhSachViPhamNangSuat && (
               <form onSubmit={handleKiemTraVaTao}>
                 <div className="form-group">
                   <label className="form-label">Thuộc mục tiêu *</label>
@@ -393,9 +649,9 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                     onChange={e => setMaMT(e.target.value)}
                     required
                   >
-                    {mucTieus.map(mt => (
+                    {mucTieuKhaDung.map(mt => (
                       <option key={mt.id} value={mt.id}>
-                        {mt.ten} ({mt.ngayBatDau} ~ {mt.ngayKetThuc}) {mt.trangThai === 'HOAN_THANH' || mt.trangThai === 'DA_HUY' ? `[${mt.trangThai}]` : ''}
+                        {mt.ten} (từ {mt.ngayBatDau} đến {mt.ngayKetThuc})
                       </option>
                     ))}
                   </select>
@@ -406,9 +662,9 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="VD: Làm bài tập Unit 4"
                     value={ten}
                     onChange={e => setTen(e.target.value)}
+                    placeholder="Ví dụ: Đọc tài liệu chương 1"
                     required
                   />
                 </div>
@@ -418,13 +674,13 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                   <textarea
                     className="form-textarea"
                     rows={2}
-                    placeholder="Chi tiết công việc..."
                     value={moTa}
                     onChange={e => setMoTa(e.target.value)}
+                    placeholder="Mô tả chi tiết nội dung cần làm..."
                   />
                 </div>
 
-                <div className="grid-3">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div className="form-group">
                     <label className="form-label">Hạn chót *</label>
                     <input
@@ -435,39 +691,41 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                       required
                     />
                   </div>
+
                   <div className="form-group">
-                    <label className="form-label">Ước lượng giờ *</label>
+                    <label className="form-label">Ước lượng (giờ) *</label>
                     <input
                       type="number"
-                      step="any"
-                      min="0.01"
                       className="form-input"
+                      min="0.1"
+                      step="any"
                       value={uocLuongGio}
-                      onChange={e => setUocLuongGio(parseFloat(e.target.value) || 0)}
+                      onChange={e => setUocLuongGio(Number(e.target.value))}
                       required
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Độ ưu tiên</label>
-                    <select
-                      className="form-select"
-                      value={uuTien}
-                      onChange={e => setUuTien(e.target.value as UuTien)}
-                    >
-                      <option value="THAP">Thấp</option>
-                      <option value="TRUNG_BINH">Trung bình</option>
-                      <option value="CAO">Cao</option>
-                    </select>
-                  </div>
                 </div>
 
-                <div className="form-hint" style={{ marginBottom: '16px' }}>
-                  * Quy tắc BR04: Hạn chót phải nằm trong khoảng thời gian của mục tiêu, giờ ước lượng {'>'} 0.
+                <div className="form-group">
+                  <label className="form-label">Mức ưu tiên</label>
+                  <select
+                    className="form-select"
+                    value={uuTien}
+                    onChange={e => setUuTien(e.target.value as UuTien)}
+                  >
+                    <option value="THAP">Thấp</option>
+                    <option value="TRUNG_BINH">Trung bình</option>
+                    <option value="CAO">Cao</option>
+                  </select>
                 </div>
 
-                <div className="modal-footer">
-                  <button type="button" className="btn btn-secondary" onClick={resetForm}>Hủy</button>
-                  <button type="submit" className="btn btn-primary">Tạo nhiệm vụ</button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+                  <button type="button" className="btn btn-secondary" onClick={resetTaoForm}>
+                    Hủy bỏ
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Tạo nhiệm vụ
+                  </button>
                 </div>
               </form>
             )}
@@ -475,14 +733,11 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Modal Sửa Nhiệm vụ (UC08) */}
+      {/* Modal Sửa nhiệm vụ */}
       {editingNV && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3 className="modal-title">Chỉnh sửa nhiệm vụ</h3>
-              <button className="btn btn-sm btn-secondary" onClick={() => setEditingNV(null)}>✕</button>
-            </div>
+          <div className="modal-content" style={{ maxWidth: '520px' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '16px' }}>Sửa nhiệm vụ</h3>
             <form onSubmit={handleCapNhatNV}>
               <div className="form-group">
                 <label className="form-label">Tên nhiệm vụ *</label>
@@ -505,7 +760,7 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                 />
               </div>
 
-              <div className="grid-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div className="form-group">
                   <label className="form-label">Hạn chót *</label>
                   <input
@@ -516,35 +771,41 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                     required
                   />
                 </div>
+
                 <div className="form-group">
-                  <label className="form-label">Ước lượng giờ *</label>
+                  <label className="form-label">Ước lượng (giờ) *</label>
                   <input
                     type="number"
-                    step="any"
-                    min="0.01"
                     className="form-input"
+                    min="0.1"
+                    step="any"
                     value={editingNV.uocLuongGio}
-                    onChange={e => setEditingNV({ ...editingNV, uocLuongGio: parseFloat(e.target.value) || 0 })}
+                    onChange={e => setEditingNV({ ...editingNV, uocLuongGio: Number(e.target.value) })}
                     required
                   />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Độ ưu tiên</label>
-                  <select
-                    className="form-select"
-                    value={editingNV.uuTien}
-                    onChange={e => setEditingNV({ ...editingNV, uuTien: e.target.value as UuTien })}
-                  >
-                    <option value="THAP">Thấp</option>
-                    <option value="TRUNG_BINH">Trung bình</option>
-                    <option value="CAO">Cao</option>
-                  </select>
-                </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setEditingNV(null)}>Hủy</button>
-                <button type="submit" className="btn btn-primary">Lưu thay đổi</button>
+              <div className="form-group">
+                <label className="form-label">Mức ưu tiên</label>
+                <select
+                  className="form-select"
+                  value={editingNV.uuTien}
+                  onChange={e => setEditingNV({ ...editingNV, uuTien: e.target.value as UuTien })}
+                >
+                  <option value="THAP">Thấp</option>
+                  <option value="TRUNG_BINH">Trung bình</option>
+                  <option value="CAO">Cao</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setEditingNV(null)}>
+                  Hủy bỏ
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Lưu thay đổi
+                </button>
               </div>
             </form>
           </div>

@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { MucTieu, DanhMuc, UuTien, TrangThaiMucTieu, NhiemVu } from '../domain/types';
+import { MucTieu, NhiemVu, UuTien, TrangThaiMucTieu, BANG_MUC_NANG_SUAT, ngayDiaPhuong } from '../domain/types';
 import { MucTieuController } from '../controller/MucTieuController';
 import { BoTinhHieuSuat } from '../domain/BoTinhHieuSuat';
-import { Target, Plus, FolderPlus, Trash2, Edit3, CheckCircle2, Clock, PauseCircle, XCircle } from 'lucide-react';
-import { ngayDiaPhuong } from '../domain/NgayThang';
+import { Target, Plus, Trash2, Edit3, CheckCircle2, Clock, PauseCircle, XCircle, Zap, AlertCircle } from 'lucide-react';
 
 interface Props {
   tenDangNhap: string;
   mucTieus: MucTieu[];
-  danhMucs: DanhMuc[];
   nhiemVus: NhiemVu[];
   onDataChange: () => void;
   onSelectMucTieu: (id: string) => void;
@@ -17,30 +15,24 @@ interface Props {
 export const ManHinhMucTieu: React.FC<Props> = ({
   tenDangNhap,
   mucTieus,
-  danhMucs,
   nhiemVus,
   onDataChange,
   onSelectMucTieu
 }) => {
   const [showTaoModal, setShowTaoModal] = useState(false);
-  const [showDanhMucModal, setShowDanhMucModal] = useState(false);
   const [editingMucTieu, setEditingMucTieu] = useState<MucTieu | null>(null);
 
   // Form tạo mục tiêu
   const [ten, setTen] = useState('');
   const [moTa, setMoTa] = useState('');
-  const [maDanhMuc, setMaDanhMuc] = useState<string>('');
   const [ngayBatDau, setNgayBatDau] = useState(ngayDiaPhuong());
   const [ngayKetThuc, setNgayKetThuc] = useState('');
   const [uuTien, setUuTien] = useState<UuTien>('TRUNG_BINH');
+  const [capDo, setCapDo] = useState<number>(3);
   const [thongBaoLoi, setThongBaoLoi] = useState<string | null>(null);
 
-  // Form tạo danh mục
-  const [tenDM, setTenDM] = useState('');
-  const [mauSacDM, setMauSacDM] = useState('#2563eb');
-
-  // Lọc
-  const [filterDanhMuc, setFilterDanhMuc] = useState<string>('ALL');
+  // Hộp thoại cảnh báo đổi mức năng suất (BR09)
+  const [canhBaoDoiMuc, setCanhBaoDoiMuc] = useState<{ tenMT: string; capDo: number; viPham: string[] } | null>(null);
 
   const handleTaoMucTieu = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,17 +42,17 @@ export const ManHinhMucTieu: React.FC<Props> = ({
       tenDangNhap,
       ten,
       moTa,
-      maDanhMuc || null,
       ngayBatDau,
       ngayKetThuc,
-      uuTien
+      uuTien,
+      capDo
     );
 
     if (res.success) {
       setShowTaoModal(false);
       setTen('');
       setMoTa('');
-      setMaDanhMuc('');
+      setCapDo(3);
       onDataChange();
     } else {
       setThongBaoLoi(res.message);
@@ -75,10 +67,10 @@ export const ManHinhMucTieu: React.FC<Props> = ({
     const res = MucTieuController.capNhatMucTieu(tenDangNhap, editingMucTieu.id, {
       ten: editingMucTieu.ten,
       moTa: editingMucTieu.moTa,
-      maDanhMuc: editingMucTieu.maDanhMuc,
       ngayBatDau: editingMucTieu.ngayBatDau,
       ngayKetThuc: editingMucTieu.ngayKetThuc,
-      uuTien: editingMucTieu.uuTien
+      uuTien: editingMucTieu.uuTien,
+      capDo: editingMucTieu.capDo
     });
 
     if (res.success) {
@@ -95,35 +87,41 @@ export const ManHinhMucTieu: React.FC<Props> = ({
   };
 
   const handleXoaMucTieu = (id: string, tenMT: string) => {
-    if (confirm(`Bạn có chắc chắn muốn xóa mục tiêu "${tenMT}"? Toàn bộ nhiệm vụ và hạn mức trực thuộc cũng sẽ bị xóa (quan hệ Composition).`)) {
+    if (confirm(`Bạn có chắc chắn muốn xóa mục tiêu "${tenMT}"? Toàn bộ nhiệm vụ và lịch sử tiến độ liên quan cũng sẽ bị xóa.`)) {
       MucTieuController.xoaMucTieu(tenDangNhap, id);
       onDataChange();
     }
   };
 
-  const handleTaoDanhMuc = (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = MucTieuController.taoDanhMuc(tenDangNhap, tenDM, mauSacDM);
+  const handleDoiCapDoTrucTiep = (mt: MucTieu, capMoi: number) => {
+    if (mt.capDo === capMoi) return;
+    const res = MucTieuController.datMucNangSuat(tenDangNhap, mt.id, capMoi);
     if (res.success) {
-      setTenDM('');
+      if (res.viPhamHienCo && res.viPhamHienCo.length > 0) {
+        setCanhBaoDoiMuc({ tenMT: mt.ten, capDo: capMoi, viPham: res.viPhamHienCo });
+      }
       onDataChange();
     } else {
       alert(res.message);
     }
   };
 
-  const handleXoaDanhMuc = (id: string, tenDMName: string) => {
-    if (confirm(`Xóa danh mục "${tenDMName}"? Các mục tiêu trực thuộc sẽ chuyển về "Không danh mục" (BR17).`)) {
-      MucTieuController.xoaDanhMuc(tenDangNhap, id);
-      onDataChange();
+  const nhanTrangThai = (tt: TrangThaiMucTieu) => {
+    switch (tt) {
+      case 'DANG_THUC_HIEN': return { label: 'Đang thực hiện', cls: 'tag-blue' };
+      case 'TAM_DUNG': return { label: 'Tạm dừng', cls: 'tag-yellow' };
+      case 'HOAN_THANH': return { label: 'Hoàn thành', cls: 'tag-green' };
+      case 'DA_HUY': return { label: 'Đã hủy', cls: 'tag-gray' };
     }
   };
 
-  const filteredMucTieus = mucTieus.filter(mt => {
-    if (filterDanhMuc === 'ALL') return true;
-    if (filterDanhMuc === 'NONE') return !mt.maDanhMuc;
-    return mt.maDanhMuc === filterDanhMuc;
-  });
+  const nhanUuTien = (ut: UuTien) => {
+    switch (ut) {
+      case 'CAO': return { label: 'Ưu tiên cao', cls: 'tag-red' };
+      case 'TRUNG_BINH': return { label: 'Ưu tiên trung bình', cls: 'tag-blue' };
+      case 'THAP': return { label: 'Ưu tiên thấp', cls: 'tag-gray' };
+    }
+  };
 
   return (
     <div>
@@ -131,89 +129,88 @@ export const ManHinhMucTieu: React.FC<Props> = ({
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Target size={24} color="#2563eb" />
-            <span>Mục tiêu của tôi ({filteredMucTieus.length})</span>
+            <span>Mục tiêu ({mucTieus.length})</span>
           </h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem' }}>Quản lý kế hoạch, danh mục và giám sát tiến độ hoàn thành</p>
+          <p style={{ color: '#64748b', fontSize: '0.85rem' }}>
+            Quản lý mục tiêu, mức năng suất cam kết và theo dõi tiến độ tổng thể
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-secondary" onClick={() => setShowDanhMucModal(true)}>
-            <FolderPlus size={16} />
-            <span>Danh mục</span>
-          </button>
-          <button className="btn btn-primary" onClick={() => { setThongBaoLoi(null); setShowTaoModal(true); }}>
-            <Plus size={16} />
-            <span>Tạo mục tiêu</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Bộ lọc danh mục */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '16px', paddingBottom: '6px' }}>
-        <button
-          className={`btn btn-sm ${filterDanhMuc === 'ALL' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setFilterDanhMuc('ALL')}
-        >
-          Tất cả ({mucTieus.length})
+        <button className="btn btn-primary" onClick={() => { setThongBaoLoi(null); setShowTaoModal(true); }}>
+          <Plus size={16} />
+          <span>Tạo mục tiêu</span>
         </button>
-        {danhMucs.map(dm => (
-          <button
-            key={dm.id}
-            className={`btn btn-sm ${filterDanhMuc === dm.id ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ borderColor: dm.mauSac }}
-            onClick={() => setFilterDanhMuc(dm.id)}
-          >
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: dm.mauSac }}></span>
-            <span>{dm.ten}</span>
-          </button>
-        ))}
       </div>
 
-      {/* Danh sách mục tiêu */}
-      {filteredMucTieus.length === 0 ? (
+      {mucTieus.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '48px 16px', color: '#64748b' }}>
           <Target size={48} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
           <p style={{ fontWeight: 600 }}>Chưa có mục tiêu nào được tạo.</p>
-          <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>Hãy bắt đầu bằng cách nhấn "Tạo mục tiêu" ở trên!</p>
+          <p style={{ fontSize: '0.85rem', marginTop: '4px' }}>Bắt đầu bằng cách bấm "Tạo mục tiêu" ở phía trên.</p>
         </div>
       ) : (
         <div className="grid-2">
-          {filteredMucTieus.map(mt => {
+          {mucTieus.map(mt => {
             const nvCuaMT = nhiemVus.filter(n => n.maMucTieu === mt.id);
             const tienDo = BoTinhHieuSuat.tinhTienDoMucTieu(nvCuaMT);
-            const dm = danhMucs.find(d => d.id === mt.maDanhMuc);
+            const tt = nhanTrangThai(mt.trangThai);
+            const ut = nhanUuTien(mt.uuTien);
+            const infoNangSuat = BANG_MUC_NANG_SUAT[mt.capDo] || BANG_MUC_NANG_SUAT[3];
 
             return (
               <div key={mt.id} className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <span className={`tag ${mt.trangThai === 'HOAN_THANH' ? 'tag-green' : mt.trangThai === 'DANG_THUC_HIEN' ? 'tag-blue' : mt.trangThai === 'TAM_DUNG' ? 'tag-yellow' : 'tag-gray'}`}>
-                      {mt.trangThai}
-                    </span>
-                    {dm && (
-                      <span className="tag" style={{ background: dm.mauSac + '20', color: dm.mauSac, border: `1px solid ${dm.mauSac}40` }}>
-                        {dm.ten}
-                      </span>
-                    )}
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <span className={`tag ${tt.cls}`}>{tt.label}</span>
+                      <span className={`tag ${ut.cls}`}>{ut.label}</span>
+                    </div>
+
+                    {/* Mức năng suất 5 tia chớp bấm trực tiếp */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: '#f8fafc', padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--border)' }} title="Bấm để đổi mức năng suất">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => handleDoiCapDoTrucTiep(mt, star)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '1px',
+                            color: star <= mt.capDo ? '#eab308' : '#cbd5e1',
+                            fontSize: '1rem',
+                            lineHeight: 1
+                          }}
+                        >
+                          ⚡
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <h3
-                    style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '6px', cursor: 'pointer', color: '#1e293b' }}
+                    style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '6px', cursor: 'pointer', color: '#1e293b' }}
                     onClick={() => onSelectMucTieu(mt.id)}
                   >
                     {mt.ten}
                   </h3>
-                  {mt.moTa && <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>{mt.moTa}</p>}
+                  {mt.moTa && <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '10px' }}>{mt.moTa}</p>}
+
+                  {/* Thông tin mức năng suất chi tiết */}
+                  <div style={{ fontSize: '0.75rem', color: '#475569', background: '#f8fafc', padding: '6px 10px', borderRadius: '6px', marginBottom: '12px' }}>
+                    Mức năng suất <strong>{mt.capDo} ⚡</strong>: Tối đa <strong>{infoNangSuat.soNhiemVuToiDaNgay}</strong> nhiệm vụ/ngày, <strong>{infoNangSuat.soGioToiDaTuan}</strong> giờ/tuần
+                  </div>
 
                   <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', gap: '16px', marginBottom: '12px' }}>
                     <div>Bắt đầu: <strong>{mt.ngayBatDau}</strong></div>
                     <div>Kết thúc: <strong>{mt.ngayKetThuc}</strong></div>
                   </div>
 
-                  {/* Tiến độ (Information Expert) */}
+                  {/* Thanh tiến độ mục tiêu */}
                   <div style={{ marginBottom: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 600 }}>
-                      <span>Tiến độ thực hiện</span>
-                      <span>{tienDo}% ({nvCuaMT.filter(n => n.trangThai === 'HOAN_THANH').length}/{nvCuaMT.filter(n => n.trangThai !== 'DA_HUY').length} NV)</span>
+                      <span>Tiến độ mục tiêu (trung bình %)</span>
+                      <span>{tienDo}% ({nvCuaMT.filter(n => n.trangThai !== 'DA_HUY').length} nhiệm vụ)</span>
                     </div>
                     <div className="progress-bar-bg">
                       <div className="progress-bar-fill" style={{ width: `${tienDo}%`, background: tienDo === 100 ? '#10b981' : '#2563eb' }}></div>
@@ -229,12 +226,12 @@ export const ManHinhMucTieu: React.FC<Props> = ({
                       </button>
                     )}
                     {mt.trangThai === 'DANG_THUC_HIEN' && (
-                      <button className="btn btn-sm btn-secondary" title="Tạm dừng" onClick={() => handleDoiTrangThai(mt.id, 'TAM_DUNG')}>
+                      <button className="btn btn-sm btn-secondary" title="Tạm dừng mục tiêu" onClick={() => handleDoiTrangThai(mt.id, 'TAM_DUNG')}>
                         <PauseCircle size={14} />
                       </button>
                     )}
                     {mt.trangThai === 'TAM_DUNG' && (
-                      <button className="btn btn-sm btn-secondary" title="Tiếp tục" onClick={() => handleDoiTrangThai(mt.id, 'DANG_THUC_HIEN')}>
+                      <button className="btn btn-sm btn-secondary" title="Tiếp tục thực hiện" onClick={() => handleDoiTrangThai(mt.id, 'DANG_THUC_HIEN')}>
                         <Clock size={14} />
                       </button>
                     )}
@@ -247,7 +244,7 @@ export const ManHinhMucTieu: React.FC<Props> = ({
 
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button className="btn btn-sm btn-secondary" onClick={() => onSelectMucTieu(mt.id)}>
-                      Xem NV & Hạn mức
+                      Xem nhiệm vụ
                     </button>
                     <button className="btn btn-sm btn-secondary" onClick={() => { setThongBaoLoi(null); setEditingMucTieu(mt); }}>
                       <Edit3 size={14} />
@@ -260,6 +257,37 @@ export const ManHinhMucTieu: React.FC<Props> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Cảnh báo đổi mức năng suất (BR09) */}
+      {canhBaoDoiMuc && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#b45309' }}>
+                <AlertCircle size={22} />
+                <span>Nhiệm vụ vượt mức năng suất mới</span>
+              </h3>
+              <button className="btn btn-sm btn-secondary" onClick={() => setCanhBaoDoiMuc(null)}>✕</button>
+            </div>
+            <p style={{ fontSize: '0.875rem', marginBottom: '12px' }}>
+              Mục tiêu <strong>{canhBaoDoiMuc.tenMT}</strong> đã chuyển sang mức năng suất <strong>{canhBaoDoiMuc.capDo} ⚡</strong>. Các nhiệm vụ hiện có đã vượt mức này:
+            </p>
+            <ul style={{ paddingLeft: '20px', fontSize: '0.825rem', color: '#b45309', marginBottom: '16px', lineHeight: 1.5 }}>
+              {canhBaoDoiMuc.viPham.map((v, i) => (
+                <li key={i}>{v}</li>
+              ))}
+            </ul>
+            <p style={{ fontSize: '0.75rem', color: '#64748b', fontStyle: 'italic', marginBottom: '16px' }}>
+              Quy tắc không hồi tố: Các nhiệm vụ hiện có được giữ nguyên vẹn, không bị chỉnh sửa hay xóa bỏ.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button className="btn btn-primary" onClick={() => setCanhBaoDoiMuc(null)}>
+                Đã hiểu
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -290,37 +318,29 @@ export const ManHinhMucTieu: React.FC<Props> = ({
                 <textarea
                   className="form-textarea"
                   rows={2}
-                  placeholder="Mục đích, kế hoạch chi tiết..."
+                  placeholder="Mục đích, kế hoạch..."
                   value={moTa}
                   onChange={e => setMoTa(e.target.value)}
                 />
               </div>
 
-              <div className="grid-2">
-                <div className="form-group">
-                  <label className="form-label">Danh mục</label>
-                  <select
-                    className="form-select"
-                    value={maDanhMuc}
-                    onChange={e => setMaDanhMuc(e.target.value)}
-                  >
-                    <option value="">(Không thuộc danh mục)</option>
-                    {danhMucs.map(dm => (
-                      <option key={dm.id} value={dm.id}>{dm.ten}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Độ ưu tiên</label>
-                  <select
-                    className="form-select"
-                    value={uuTien}
-                    onChange={e => setUuTien(e.target.value as UuTien)}
-                  >
-                    <option value="THAP">Thấp</option>
-                    <option value="TRUNG_BINH">Trung bình</option>
-                    <option value="CAO">Cao</option>
-                  </select>
+              {/* Mức năng suất 1-5 ⚡ */}
+              <div className="form-group">
+                <label className="form-label">
+                  Mức năng suất cam kết: <strong>{capDo} ⚡</strong> (Tối đa {BANG_MUC_NANG_SUAT[capDo].soNhiemVuToiDaNgay} NV/ngày, {BANG_MUC_NANG_SUAT[capDo].soGioToiDaTuan} giờ/tuần)
+                </label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                  {[1, 2, 3, 4, 5].map(lvl => (
+                    <button
+                      key={lvl}
+                      type="button"
+                      className={`btn ${capDo === lvl ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ flex: 1, padding: '8px 4px', fontSize: '0.9rem' }}
+                      onClick={() => setCapDo(lvl)}
+                    >
+                      {lvl} ⚡
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -346,8 +366,18 @@ export const ManHinhMucTieu: React.FC<Props> = ({
                   />
                 </div>
               </div>
-              <div className="form-hint" style={{ marginBottom: '16px' }}>
-                * Quy tắc BR03: Tên bắt buộc, Ngày kết thúc ≥ Ngày bắt đầu.
+
+              <div className="form-group">
+                <label className="form-label">Độ ưu tiên</label>
+                <select
+                  className="form-select"
+                  value={uuTien}
+                  onChange={e => setUuTien(e.target.value as UuTien)}
+                >
+                  <option value="THAP">Thấp</option>
+                  <option value="TRUNG_BINH">Trung bình</option>
+                  <option value="CAO">Cao</option>
+                </select>
               </div>
 
               <div className="modal-footer">
@@ -392,34 +422,6 @@ export const ManHinhMucTieu: React.FC<Props> = ({
 
               <div className="grid-2">
                 <div className="form-group">
-                  <label className="form-label">Danh mục</label>
-                  <select
-                    className="form-select"
-                    value={editingMucTieu.maDanhMuc || ''}
-                    onChange={e => setEditingMucTieu({ ...editingMucTieu, maDanhMuc: e.target.value || null })}
-                  >
-                    <option value="">(Không danh mục)</option>
-                    {danhMucs.map(dm => (
-                      <option key={dm.id} value={dm.id}>{dm.ten}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Độ ưu tiên</label>
-                  <select
-                    className="form-select"
-                    value={editingMucTieu.uuTien}
-                    onChange={e => setEditingMucTieu({ ...editingMucTieu, uuTien: e.target.value as UuTien })}
-                  >
-                    <option value="THAP">Thấp</option>
-                    <option value="TRUNG_BINH">Trung bình</option>
-                    <option value="CAO">Cao</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid-2">
-                <div className="form-group">
                   <label className="form-label">Ngày bắt đầu</label>
                   <input
                     type="date"
@@ -441,66 +443,40 @@ export const ManHinhMucTieu: React.FC<Props> = ({
                 </div>
               </div>
 
+              <div className="grid-2">
+                <div className="form-group">
+                  <label className="form-label">Mức năng suất</label>
+                  <select
+                    className="form-select"
+                    value={editingMucTieu.capDo}
+                    onChange={e => setEditingMucTieu({ ...editingMucTieu, capDo: parseInt(e.target.value, 10) || 3 })}
+                  >
+                    {[1, 2, 3, 4, 5].map(l => (
+                      <option key={l} value={l}>
+                        Mức {l} ⚡ (Tối đa {BANG_MUC_NANG_SUAT[l].soNhiemVuToiDaNgay} NV/ngày, {BANG_MUC_NANG_SUAT[l].soGioToiDaTuan}h/tuần)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Độ ưu tiên</label>
+                  <select
+                    className="form-select"
+                    value={editingMucTieu.uuTien}
+                    onChange={e => setEditingMucTieu({ ...editingMucTieu, uuTien: e.target.value as UuTien })}
+                  >
+                    <option value="THAP">Thấp</option>
+                    <option value="TRUNG_BINH">Trung bình</option>
+                    <option value="CAO">Cao</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setEditingMucTieu(null)}>Hủy</button>
                 <button type="submit" className="btn btn-primary">Lưu thay đổi</button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Quản lý Danh mục (UC06) */}
-      {showDanhMucModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h3 className="modal-title">Quản lý danh mục</h3>
-              <button className="btn btn-sm btn-secondary" onClick={() => setShowDanhMucModal(false)}>✕</button>
-            </div>
-
-            <form onSubmit={handleTaoDanhMuc} style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '10px' }}>Thêm danh mục mới</h4>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Tên danh mục (VD: Học tập, Sức khỏe...)"
-                  value={tenDM}
-                  onChange={e => setTenDM(e.target.value)}
-                  required
-                />
-                <input
-                  type="color"
-                  value={mauSacDM}
-                  onChange={e => setMauSacDM(e.target.value)}
-                  style={{ width: '42px', height: '42px', border: 'none', background: 'none', cursor: 'pointer' }}
-                />
-                <button type="submit" className="btn btn-primary">Thêm</button>
-              </div>
-            </form>
-
-            <h4 style={{ fontSize: '0.95rem', fontWeight: 600, marginBottom: '10px' }}>Danh mục hiện có</h4>
-            {danhMucs.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: '#64748b' }}>Chưa có danh mục nào.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {danhMucs.map(dm => (
-                  <div key={dm.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: dm.mauSac }}></span>
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{dm.ten}</span>
-                    </div>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleXoaDanhMuc(dm.id, dm.ten)}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="form-hint" style={{ marginTop: '16px' }}>
-              * BR17: Xóa danh mục sẽ chuyển các mục tiêu liên quan về "Không danh mục", không xóa mục tiêu.
-            </div>
           </div>
         </div>
       )}

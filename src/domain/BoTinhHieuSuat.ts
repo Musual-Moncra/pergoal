@@ -1,21 +1,17 @@
-import { NhiemVu, HanMuc, BanGhiTienDo, BaoCaoHieuSuat } from './types';
-import { cungTuan } from './BoKiemTraHanMuc';
+import { NhiemVu, BanGhiTienDo, BaoCaoHieuSuat } from './types';
 
 export class BoTinhHieuSuat {
   /**
    * Tính tiến độ phần trăm của một Mục tiêu theo mục 5:
-   * tiến độ MucTieu = số NV HOAN_THANH / số NV khác DA_HUY × 100; không có NV → 0%.
+   * tiến độ MucTieu = trung bình cộng phanTram của các NV khác DA_HUY; không có NV → 0%.
    */
   public static tinhTienDoMucTieu(nhiemVusCuaMucTieu: NhiemVu[]): number {
     const dsHopLe = nhiemVusCuaMucTieu.filter(nv => nv.trangThai !== 'DA_HUY');
     if (dsHopLe.length === 0) return 0;
-    const soHoanThanh = dsHopLe.filter(nv => nv.trangThai === 'HOAN_THANH').length;
-    return Number(((soHoanThanh / dsHopLe.length) * 100).toFixed(1));
+    const tongPhanTram = dsHopLe.reduce((sum, nv) => sum + (nv.phanTram || 0), 0);
+    return Number((tongPhanTram / dsHopLe.length).toFixed(1));
   }
 
-  /**
-   * Lùi 1 ngày theo chuỗi YYYY-MM-DD
-   */
   private static luiMotNgay(ngayYMD: string): string {
     const parts = ngayYMD.split('-').map(Number);
     const d = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -27,78 +23,32 @@ export class BoTinhHieuSuat {
   }
 
   /**
-   * Tính chuỗi ngày liên tục có hoạt động (streak) tính lùi từ homNay:
-   * nếu homNay chưa có hoạt động thì tính lùi từ hôm qua.
-   * Hoạt động = có >= 1 NV hoàn thành hoặc >= 1 BanGhiTienDo trong ngày.
+   * Tính chuỗi ngày liên tục có BanGhiTienDo theo mục 5:
+   * số ngày liên tiếp có BanGhiTienDo, tính lùi từ homNay; nếu homNay chưa có bản ghi thì tính lùi từ hôm qua.
    */
   public static tinhChuoiNgayLienTuc(
-    tatCaNhiemVu: NhiemVu[],
     tatCaBanGhiTienDo: BanGhiTienDo[],
     homNay: string
   ): number {
-    const ngayHoatDong = new Set<string>();
-
-    for (const nv of tatCaNhiemVu) {
-      if (nv.trangThai === 'HOAN_THANH' && nv.ngayHoanThanh) {
-        ngayHoatDong.add(nv.ngayHoanThanh);
-      }
-    }
-
+    const ngayCoBanGhi = new Set<string>();
     for (const bg of tatCaBanGhiTienDo) {
       if (bg.ngayGhi) {
-        ngayHoatDong.add(bg.ngayGhi);
+        ngayCoBanGhi.add(bg.ngayGhi);
       }
     }
 
     let ngayXet = homNay;
-    if (!ngayHoatDong.has(homNay)) {
+    if (!ngayCoBanGhi.has(homNay)) {
       ngayXet = this.luiMotNgay(homNay);
     }
 
     let streak = 0;
-    while (ngayHoatDong.has(ngayXet)) {
+    while (ngayCoBanGhi.has(ngayXet)) {
       streak++;
       ngayXet = this.luiMotNgay(ngayXet);
     }
 
     return streak;
-  }
-
-  /**
-   * Tính phần trăm đạt chỉ tiêu định lượng trong tuần chứa homNay:
-   * trung bình cộng, trên các HanMuc loại CHI_TIEU_DINH_LUONG, của min(100, tổng giaTriDinhLuong trong tuần chứa homNay / giaTri × 100); không có chỉ tiêu → null ("—")
-   */
-  public static tinhPhanTramDatChiTieu(
-    hanMucs: HanMuc[],
-    banGhiTienDos: BanGhiTienDo[],
-    homNay: string,
-    maMucTieu?: string | null
-  ): number | null {
-    const chiTieuMucs = hanMucs.filter(
-      hm => hm.loai === 'CHI_TIEU_DINH_LUONG' && (!maMucTieu || hm.maMucTieu === maMucTieu)
-    );
-
-    if (chiTieuMucs.length === 0) {
-      return null;
-    }
-
-    let tongPhanTram = 0;
-
-    for (const hm of chiTieuMucs) {
-      const dinhMuc = Number(hm.giaTri);
-      if (dinhMuc <= 0) continue;
-
-      // Bản ghi tiến độ gán cho hạn mức này hoặc có giá trị định lượng trong tuần chứa homNay
-      const tongGiaTriTuan = banGhiTienDos
-        .filter(bg => bg.maHanMuc === hm.id && cungTuan(bg.ngayGhi, homNay))
-        .reduce((sum, bg) => sum + (bg.giaTriDinhLuong || 0), 0);
-
-      const phanTramHM = Math.min(100, (tongGiaTriTuan / dinhMuc) * 100);
-      tongPhanTram += phanTramHM;
-    }
-
-    const tb = tongPhanTram / chiTieuMucs.length;
-    return Number(tb.toFixed(1));
   }
 
   /**
@@ -109,12 +59,10 @@ export class BoTinhHieuSuat {
     tuNgay: string,
     denNgay: string,
     danhSachNhiemVu: NhiemVu[],
-    danhSachHanMuc: HanMuc[],
     danhSachBanGhi: BanGhiTienDo[],
     homNay: string,
     maMucTieu?: string | null
   ): BaoCaoHieuSuat {
-    // Lọc tập xét
     const tapXet = danhSachNhiemVu.filter(nv => {
       if (nv.trangThai === 'DA_HUY') return false;
       if (maMucTieu && nv.maMucTieu !== maMucTieu) return false;
@@ -133,21 +81,21 @@ export class BoTinhHieuSuat {
           soNhiemVuTre++;
         }
       } else {
-        // Chưa hoàn thành
         if (nv.hanChot < homNay) {
           soNhiemVuTre++;
         }
-        // hanChot >= homNay: không tính vào hai số trên (theo quy định mục 5)
       }
     }
 
     const mauSo = soDungHan + soNhiemVuTre;
     const tiLeDungHan = mauSo === 0 ? null : Number(((soDungHan / mauSo) * 100).toFixed(1));
 
-    const phanTramDatChiTieu = this.tinhPhanTramDatChiTieu(danhSachHanMuc, danhSachBanGhi, homNay, maMucTieu);
+    // tienDoTrungBinh = trung bình cộng phanTram của tập xét; tập rỗng -> null
+    const tienDoTrungBinh = tapXet.length === 0
+      ? null
+      : Number((tapXet.reduce((sum, nv) => sum + (nv.phanTram || 0), 0) / tapXet.length).toFixed(1));
 
-    // Chuỗi ngày liên tục tính trên toàn bộ dữ liệu người dùng
-    const chuoiNgayLienTuc = this.tinhChuoiNgayLienTuc(danhSachNhiemVu, danhSachBanGhi, homNay);
+    const chuoiNgayLienTuc = this.tinhChuoiNgayLienTuc(danhSachBanGhi, homNay);
 
     return {
       tuNgay,
@@ -155,8 +103,8 @@ export class BoTinhHieuSuat {
       tiLeDungHan,
       soDungHan,
       soNhiemVuTre,
-      phanTramDatChiTieu,
-      chuoiNgayLienTuc
+      chuoiNgayLienTuc,
+      tienDoTrungBinh
     };
   }
 }

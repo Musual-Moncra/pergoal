@@ -1,11 +1,10 @@
 import { KhoDuLieu } from '../domain/KhoDuLieu';
 import { BoTinhHieuSuat } from '../domain/BoTinhHieuSuat';
-import { BaoCaoHieuSuat } from '../domain/types';
-import { ngayDiaPhuong } from '../domain/NgayThang';
+import { BaoCaoHieuSuat, ngayDiaPhuong } from '../domain/types';
 
 export class BaoCaoController {
   /**
-   * UC11: xemBaoCaoHieuSuat(tuNgay, denNgay, maMucTieu)
+   * UC10: xemBaoCaoHieuSuat(tuNgay, denNgay, maMucTieu)
    */
   public static xemBaoCaoHieuSuat(
     tenDangNhap: string,
@@ -14,7 +13,7 @@ export class BaoCaoController {
     maMucTieu?: string | null
   ): {
     baoCao: BaoCaoHieuSuat;
-    tienDoMucTieuList: Array<{ id: string; ten: string; tienDo: number }>;
+    tienDoMucTieuList: Array<{ id: string; ten: string; tienDo: number; capDo: number }>;
   } {
     const data = KhoDuLieu.layDuLieu(tenDangNhap);
     const homNay = ngayDiaPhuong();
@@ -23,7 +22,6 @@ export class BaoCaoController {
       tuNgay,
       denNgay,
       data.nhiemVu,
-      data.hanMuc,
       data.banGhiTienDo,
       homNay,
       maMucTieu
@@ -35,7 +33,8 @@ export class BaoCaoController {
       return {
         id: mt.id,
         ten: mt.ten,
-        tienDo: BoTinhHieuSuat.tinhTienDoMucTieu(nvCuaMT)
+        tienDo: BoTinhHieuSuat.tinhTienDoMucTieu(nvCuaMT),
+        capDo: mt.capDo
       };
     });
 
