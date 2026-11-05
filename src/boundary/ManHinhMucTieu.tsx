@@ -3,6 +3,7 @@ import { MucTieu, DanhMuc, UuTien, TrangThaiMucTieu, NhiemVu } from '../domain/t
 import { MucTieuController } from '../controller/MucTieuController';
 import { BoTinhHieuSuat } from '../domain/BoTinhHieuSuat';
 import { Target, Plus, FolderPlus, Trash2, Edit3, CheckCircle2, Clock, PauseCircle, XCircle } from 'lucide-react';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 interface Props {
   tenDangNhap: string;
@@ -29,7 +30,7 @@ export const ManHinhMucTieu: React.FC<Props> = ({
   const [ten, setTen] = useState('');
   const [moTa, setMoTa] = useState('');
   const [maDanhMuc, setMaDanhMuc] = useState<string>('');
-  const [ngayBatDau, setNgayBatDau] = useState(new Date().toISOString().split('T')[0]);
+  const [ngayBatDau, setNgayBatDau] = useState(ngayDiaPhuong());
   const [ngayKetThuc, setNgayKetThuc] = useState('');
   const [uuTien, setUuTien] = useState<UuTien>('TRUNG_BINH');
   const [thongBaoLoi, setThongBaoLoi] = useState<string | null>(null);

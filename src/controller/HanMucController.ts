@@ -1,6 +1,7 @@
 import { KhoDuLieu } from '../domain/KhoDuLieu';
 import { HanMuc, LoaiHanMuc } from '../domain/types';
 import { BoKiemTraHanMuc } from '../domain/BoKiemTraHanMuc';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 export class HanMucController {
   /**
@@ -76,7 +77,7 @@ export class HanMucController {
     }
 
     const id = 'hm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-    const homNay = new Date().toISOString().split('T')[0];
+    const homNay = ngayDiaPhuong();
 
     const hmMoi: HanMuc = {
       id,

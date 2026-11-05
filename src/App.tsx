@@ -12,6 +12,7 @@ import { ManHinhBaoCao } from './boundary/ManHinhBaoCao';
 import { ManHinhNhacNho } from './boundary/ManHinhNhacNho';
 import { ManHinhDuLieu } from './boundary/ManHinhDuLieu';
 import { Target, CheckSquare, Sliders, Activity, BarChart3, Bell, FileText, LogOut, ShieldCheck } from 'lucide-react';
+import { ngayDiaPhuong } from './domain/NgayThang';
 
 export const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<NguoiDung | null>(null);
@@ -52,7 +53,7 @@ export const App: React.FC = () => {
     if (!currentUser) return;
 
     const kiemTra = () => {
-      const homNay = new Date().toISOString().split('T')[0];
+      const homNay = ngayDiaPhuong();
       const nhacMoi = NhacNhoController.kiemTraNhacNho(currentUser.tenDangNhap, homNay);
       if (nhacMoi.length > 0) {
         reloadData();

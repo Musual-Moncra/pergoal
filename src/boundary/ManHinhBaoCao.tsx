@@ -13,6 +13,7 @@ import {
 } from 'chart.js';
 import { Doughnut, Bar } from 'react-chartjs-2';
 import { BarChart3, TrendingUp, CheckCircle, AlertOctagon, Flame, Target } from 'lucide-react';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 ChartJS.register(
   ArcElement,
@@ -30,16 +31,16 @@ interface Props {
 }
 
 export const ManHinhBaoCao: React.FC<Props> = ({ tenDangNhap, mucTieus }) => {
-  const homNay = new Date().toISOString().split('T')[0];
+  const homNay = ngayDiaPhuong();
 
   // Mặc định khoảng thời gian: 30 ngày qua đến 30 ngày tới
   const tinhMocMacDinh = () => {
     const d = new Date();
     d.setDate(d.getDate() - 30);
-    const tu = d.toISOString().split('T')[0];
+    const tu = ngayDiaPhuong(d);
     const d2 = new Date();
     d2.setDate(d2.getDate() + 30);
-    const den = d2.toISOString().split('T')[0];
+    const den = ngayDiaPhuong(d2);
     return { tu, den };
   };
 

@@ -1,5 +1,6 @@
 import { KhoDuLieu } from '../domain/KhoDuLieu';
 import { BanGhiTienDo } from '../domain/types';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 export class TienDoController {
   /**
@@ -36,7 +37,7 @@ export class TienDoController {
       };
     }
 
-    const homNay = new Date().toISOString().split('T')[0];
+    const homNay = ngayDiaPhuong();
     const id = 'bg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
 
     const bg: BanGhiTienDo = {
@@ -86,7 +87,7 @@ export class TienDoController {
       };
     }
 
-    const homNay = new Date().toISOString().split('T')[0];
+    const homNay = ngayDiaPhuong();
     nv.trangThai = 'HOAN_THANH';
     nv.ngayHoanThanh = homNay;
 
@@ -129,7 +130,7 @@ export class TienDoController {
       return { success: false, message: 'Chỉ có thể ghi nhận cho hạn mức loại CHI_TIEU_DINH_LUONG (BR13).' };
     }
 
-    const ngayChuan = ngayGhi || new Date().toISOString().split('T')[0];
+    const ngayChuan = ngayGhi || ngayDiaPhuong();
     const id = 'bg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
 
     const bg: BanGhiTienDo = {

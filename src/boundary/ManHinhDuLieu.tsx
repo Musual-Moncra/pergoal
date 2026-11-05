@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { DuLieuController } from '../controller/DuLieuController';
 import { Download, Upload, AlertCircle, CheckCircle, FileText, Info } from 'lucide-react';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 interface Props {
   tenDangNhap: string;
@@ -18,7 +19,7 @@ export const ManHinhDuLieu: React.FC<Props> = ({ tenDangNhap, onDataChange }) =>
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `pergoal_backup_${tenDangNhap}_${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `pergoal_backup_${tenDangNhap}_${ngayDiaPhuong()}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

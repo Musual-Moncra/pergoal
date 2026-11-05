@@ -1,6 +1,7 @@
 import { KhoDuLieu } from '../domain/KhoDuLieu';
 import { BoTinhHieuSuat } from '../domain/BoTinhHieuSuat';
 import { BaoCaoHieuSuat } from '../domain/types';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 export class BaoCaoController {
   /**
@@ -16,7 +17,7 @@ export class BaoCaoController {
     tienDoMucTieuList: Array<{ id: string; ten: string; tienDo: number }>;
   } {
     const data = KhoDuLieu.layDuLieu(tenDangNhap);
-    const homNay = new Date().toISOString().split('T')[0];
+    const homNay = ngayDiaPhuong();
 
     const baoCao = BoTinhHieuSuat.tinhBaoCaoHieuSuat(
       tuNgay,

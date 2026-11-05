@@ -1,5 +1,6 @@
 import { KhoDuLieu } from '../domain/KhoDuLieu';
 import { NhacNho } from '../domain/types';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 export class NhacNhoController {
   /**
@@ -38,7 +39,7 @@ export class NhacNhoController {
           nn =>
             nn.maNhiemVu === nv.id &&
             nn.loai === 'SAP_DEN_HAN' &&
-            nn.thoiDiemTao.startsWith(homNay)
+            ngayDiaPhuong(new Date(nn.thoiDiemTao)) === homNay
         );
         if (!daCoHomNay) {
           const nn: NhacNho = {
@@ -61,7 +62,7 @@ export class NhacNhoController {
           nn =>
             nn.maNhiemVu === nv.id &&
             nn.loai === 'QUA_HAN' &&
-            nn.thoiDiemTao.startsWith(homNay)
+            ngayDiaPhuong(new Date(nn.thoiDiemTao)) === homNay
         );
         if (!daCoHomNay) {
           const nn: NhacNho = {

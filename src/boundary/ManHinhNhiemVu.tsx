@@ -3,6 +3,7 @@ import { MucTieu, NhiemVu, UuTien, TrangThaiNhiemVu } from '../domain/types';
 import { NhiemVuController } from '../controller/NhiemVuController';
 import { TienDoController } from '../controller/TienDoController';
 import { CheckSquare, Plus, AlertTriangle, CheckCircle2, Clock, Trash2, XCircle, Edit3 } from 'lucide-react';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 interface Props {
   tenDangNhap: string;
@@ -31,7 +32,7 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
   const [maMT, setMaMT] = useState(selectedMucTieuId || (mucTieus[0]?.id || ''));
   const [ten, setTen] = useState('');
   const [moTa, setMoTa] = useState('');
-  const [hanChot, setHanChot] = useState(new Date().toISOString().split('T')[0]);
+  const [hanChot, setHanChot] = useState(ngayDiaPhuong());
   const [uuTien, setUuTien] = useState<UuTien>('TRUNG_BINH');
   const [uocLuongGio, setUocLuongGio] = useState<number>(2);
 
@@ -118,18 +119,25 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
     e.preventDefault();
     if (!editingNV) return;
 
-    const res = NhiemVuController.capNhatNhiemVu(tenDangNhap, editingNV.id, {
+    const thongTinMoi = {
       ten: editingNV.ten,
       moTa: editingNV.moTa,
       hanChot: editingNV.hanChot,
       uuTien: editingNV.uuTien,
       uocLuongGio: editingNV.uocLuongGio
-    });
+    };
+    let res = NhiemVuController.capNhatNhiemVu(tenDangNhap, editingNV.id, thongTinMoi);
+
+    // BR09: vi phạm hạn mức thì chưa ghi gì, chỉ ghi đè khi người dùng xác nhận
+    if (!res.success && res.canhBaoHanMuc && res.canhBaoHanMuc.length > 0) {
+      const dongY = confirm(
+        'Thay đổi này vi phạm hạn mức:\n' + res.canhBaoHanMuc.join('\n') + '\n\nVẫn lưu và ghi đè hạn mức?'
+      );
+      if (!dongY) return;
+      res = NhiemVuController.capNhatNhiemVu(tenDangNhap, editingNV.id, { ...thongTinMoi }, true);
+    }
 
     if (res.success) {
-      if (res.canhBaoHanMuc && res.canhBaoHanMuc.length > 0) {
-        alert('Cập nhật thành công nhưng nhiệm vụ này đang vượt hạn mức:\n' + res.canhBaoHanMuc.join('\n'));
-      }
       setEditingNV(null);
       onDataChange();
     } else {
@@ -137,7 +145,7 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
     }
   };
 
-  const homNay = new Date().toISOString().split('T')[0];
+  const homNay = ngayDiaPhuong();
 
   const filteredNhiemVus = nhiemVus.filter(nv => {
     if (filterMucTieu !== 'ALL' && nv.maMucTieu !== filterMucTieu) return false;

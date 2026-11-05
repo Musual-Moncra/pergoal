@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NhiemVu, HanMuc, BanGhiTienDo } from '../domain/types';
 import { TienDoController } from '../controller/TienDoController';
 import { Activity, Plus, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { ngayDiaPhuong } from '../domain/NgayThang';
 
 interface Props {
   tenDangNhap: string;
@@ -34,7 +35,7 @@ export const ManHinhTienDo: React.FC<Props> = ({
   const chiTieuList = hanMucs.filter(hm => hm.loai === 'CHI_TIEU_DINH_LUONG');
   const [maHM, setMaHM] = useState<string>(chiTieuList[0]?.id || '');
   const [giaTriDinhLuong, setGiaTriDinhLuong] = useState<number>(5);
-  const [ngayGhiChiTieu, setNgayGhiChiTieu] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [ngayGhiChiTieu, setNgayGhiChiTieu] = useState<string>(ngayDiaPhuong());
   const [ghiChuChiTieu, setGhiChuChiTieu] = useState<string>('');
 
   const [thongBaoLoi, setThongBaoLoi] = useState<string | null>(null);
@@ -340,7 +341,7 @@ export const ManHinhTienDo: React.FC<Props> = ({
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {chiTieuList.map(hm => {
-                  const homNay = new Date().toISOString().split('T')[0];
+                  const homNay = ngayDiaPhuong();
                   // Tính tổng giá trị tuần hiện tại
                   const tongTuan = banGhiTienDos
                     .filter(bg => bg.maHanMuc === hm.id)
