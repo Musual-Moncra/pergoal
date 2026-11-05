@@ -36,9 +36,9 @@ Bộ test tập trung vào nghiệp vụ thuần, không phụ thuộc giao di�
 
 | Tệp | Nội dung |
 |---|---|
-| `src/domain/__tests__/BoKiemTraNangSuat.test.ts` | BR07: trần nhiệm vụ/ngày, trần giờ/tuần, ranh giới tuần thứ Hai – Chủ nhật, bỏ qua nhiệm vụ đã huỷ |
-| `src/domain/__tests__/BoTinhHieuSuat.test.ts` | Tỉ lệ đúng hạn (kể cả mẫu số 0), nhiệm vụ trễ, chuỗi ngày có cập nhật, tiến độ trung bình |
-| `src/domain/__tests__/TienDo.test.ts` | BR10, BR11: cập nhật phần trăm, hoàn thành, mở lại nhiệm vụ đã xong |
+| `src/__tests__/BoKiemTraNangSuat.test.ts` | BR07: trần nhiệm vụ/ngày, trần giờ/tuần, ranh giới tuần thứ Hai – Chủ nhật, bỏ qua nhiệm vụ đã huỷ |
+| `src/__tests__/BoTinhHieuSuat.test.ts` | Tỉ lệ đúng hạn (kể cả mẫu số 0), nhiệm vụ trễ, chuỗi ngày có cập nhật, tiến độ trung bình |
+| `src/__tests__/TienDo.test.ts` | BR10, BR11: cập nhật phần trăm, hoàn thành, mở lại nhiệm vụ đã xong |
 | `src/domain/__tests__/NgayThang.test.ts` | Ngày địa phương và ranh giới tuần |
 
 ## 4. Cấu trúc mã nguồn
@@ -59,7 +59,6 @@ web/
 │   │   ├── NgayThang.ts            # ngày địa phương, ranh giới tuần
 │   │   ├── BoKiemTraNangSuat.ts    # BR07
 │   │   ├── BoTinhHieuSuat.ts       # công thức hiệu suất
-│   │   ├── NhiemVu.ts              # cập nhật tiến độ (BR10, BR11)
 │   │   └── KhoDuLieu.ts            # bọc localStorage
 │   ├── controller/
 │   │   ├── TaiKhoanController.ts
@@ -77,7 +76,7 @@ web/
 └── vite.config.ts                  # base: '/pergoal/'
 ```
 
-Phân lớp theo Boundary–Controller–Entity. `BoKiemTraNangSuat`, `BoTinhHieuSuat` và phần cập nhật tiến độ của `NhiemVu` là code thuần, nhận `homNay` làm tham số để kiểm thử độc lập, không phụ thuộc React hay `localStorage`.
+Phân lớp theo Boundary–Controller–Entity. `BoKiemTraNangSuat` và `BoTinhHieuSuat` là code thuần, nhận `homNay` làm tham số để kiểm thử độc lập; logic cập nhật tiến độ nằm ở `NhiemVuController`, cũng được kiểm thử độc lập với `localStorage` giả lập.
 
 ## 5. Chức năng
 
