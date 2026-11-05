@@ -26,7 +26,10 @@ export const ManHinhTienDo: React.FC<Props> = ({
   const [tab, setTab] = useState<'NHIEM_VU' | 'CHI_TIEU'>('NHIEM_VU');
 
   // Form cập nhật tiến độ nhiệm vụ
-  const [maNV, setMaNV] = useState<string>(preSelectedNhiemVu?.id || (nhiemVus[0]?.id || ''));
+  const availableTasks = nhiemVus.filter(nv => nv.trangThai !== 'HOAN_THANH' && nv.trangThai !== 'DA_HUY');
+  const [maNV, setMaNV] = useState<string>(preSelectedNhiemVu?.id || '');
+  // Nhiệm vụ đã chọn có thể vừa hoàn thành/bị huỷ: khi đó lấy nhiệm vụ đầu tiên còn cập nhật được
+  const maNVHieuLuc = availableTasks.some(nv => nv.id === maNV) ? maNV : (availableTasks[0]?.id || '');
   const [phanTram, setPhanTram] = useState<number>(50);
   const [soGioThucTe, setSoGioThucTe] = useState<number>(1);
   const [ghiChuNV, setGhiChuNV] = useState<string>('');
@@ -48,7 +51,7 @@ export const ManHinhTienDo: React.FC<Props> = ({
 
     const res = TienDoController.capNhatTienDo(
       tenDangNhap,
-      maNV,
+      maNVHieuLuc,
       phanTram,
       soGioThucTe,
       ghiChuNV
@@ -86,7 +89,6 @@ export const ManHinhTienDo: React.FC<Props> = ({
     }
   };
 
-  const availableTasks = nhiemVus.filter(nv => nv.trangThai !== 'HOAN_THANH' && nv.trangThai !== 'DA_HUY');
 
   return (
     <div>
@@ -148,7 +150,7 @@ export const ManHinhTienDo: React.FC<Props> = ({
                   <label className="form-label">Chọn nhiệm vụ *</label>
                   <select
                     className="form-select"
-                    value={maNV}
+                    value={maNVHieuLuc}
                     onChange={e => setMaNV(e.target.value)}
                     required
                   >
