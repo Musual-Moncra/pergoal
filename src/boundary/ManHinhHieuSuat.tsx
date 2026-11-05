@@ -22,12 +22,16 @@ export const ManHinhHieuSuat: React.FC<Props> = ({ tenDangNhap, mucTieus }) => {
   const [baoCao, setBaoCao] = useState<any>(null);
   const [tienDoMucTieuList, setTienDoMucTieuList] = useState<any[]>([]);
 
+  const khoangNgayHopLe = tuNgay <= denNgay;
+
   useEffect(() => {
+    // Khoảng ngày sai thì giữ nguyên số liệu của lần xem hợp lệ trước đó
+    if (!khoangNgayHopLe) return;
     const maMT = selectedMT === 'ALL' ? null : selectedMT;
     const res = BaoCaoController.xemBaoCaoHieuSuat(tenDangNhap, tuNgay, denNgay, maMT);
     setBaoCao(res.baoCao);
     setTienDoMucTieuList(res.tienDoMucTieuList);
-  }, [tenDangNhap, tuNgay, denNgay, selectedMT]);
+  }, [tenDangNhap, tuNgay, denNgay, selectedMT, khoangNgayHopLe]);
 
   return (
     <div>
@@ -88,6 +92,12 @@ export const ManHinhHieuSuat: React.FC<Props> = ({ tenDangNhap, mucTieus }) => {
           </div>
         </div>
       </div>
+
+      {!khoangNgayHopLe && (
+        <div className="alert alert-danger">
+          <span>Từ ngày không được lớn hơn Đến ngày. Vui lòng chọn lại khoảng thời gian.</span>
+        </div>
+      )}
 
       {/* 4 chỉ số hiệu suất dạng thẻ số (KPI cards, không biểu đồ) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>

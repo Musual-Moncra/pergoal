@@ -177,4 +177,13 @@ describe('Cập nhật tiến độ (UC09, BR10, BR11)', () => {
     const nv = KhoDuLieu.layDuLieu(testUser).nhiemVu.find(n => n.id === 'nv_xong')!;
     expect(nv.ngayHoanThanh).toBe('2026-01-02');
   });
+
+  it('datMucNangSuat từ chối mức ngoài 1..5 và giữ mức cũ (BR06)', () => {
+    const mt = KhoDuLieu.layDuLieu(testUser).mucTieu[0];
+    for (const capDo of [0, 6, 2.5]) {
+      expect(MucTieuController.datMucNangSuat(testUser, mt.id, capDo).success).toBe(false);
+    }
+    expect(KhoDuLieu.layDuLieu(testUser).mucTieu[0].capDo).toBe(mt.capDo);
+    expect(MucTieuController.datMucNangSuat(testUser, mt.id, 5).success).toBe(true);
+  });
 });

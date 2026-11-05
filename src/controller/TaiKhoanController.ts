@@ -18,12 +18,12 @@ export class TaiKhoanController {
       return { success: false, message: 'Tên đăng nhập không được để trống.' };
     }
     if (matKhau.length < 8) {
-      return { success: false, message: 'Mật khẩu phải có độ dài tối thiểu 8 ký tự (BR01).' };
+      return { success: false, message: 'Mật khẩu phải có độ dài tối thiểu 8 ký tự.' };
     }
 
     const daTonTai = KhoDuLieu.timNguoiDung(cleanUser);
     if (daTonTai) {
-      return { success: false, message: 'Tên đăng nhập đã tồn tại trên thiết bị (BR01).' };
+      return { success: false, message: 'Tên đăng nhập đã tồn tại trên thiết bị.' };
     }
 
     const salt = await taoMuoiNgauNhien();

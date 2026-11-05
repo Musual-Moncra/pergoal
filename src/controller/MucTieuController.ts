@@ -137,7 +137,11 @@ export class MucTieuController {
       return { success: false, message: 'Mục tiêu không tồn tại.' };
     }
 
-    const capDoChuan = Math.min(5, Math.max(1, Math.round(Number(capDo)) || 3));
+    // BR06: capDo là số nguyên 1..5
+    if (!Number.isInteger(capDo) || capDo < 1 || capDo > 5) {
+      return { success: false, message: 'Mức năng suất phải từ 1 đến 5.' };
+    }
+    const capDoChuan = capDo;
     mt.capDo = capDoChuan;
 
     // BR09: Rà soát không hồi tố
