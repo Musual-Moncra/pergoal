@@ -283,8 +283,8 @@ export const ManHinhHanMuc: React.FC<Props> = ({
                     <label className="form-label">Tổng số giờ tối đa trong 1 tuần (số thực {'>'} 0) *</label>
                     <input
                       type="number"
-                      min="0.5"
-                      step="0.5"
+                      min="0.01"
+                      step="any"
                       className="form-input"
                       placeholder="VD: 20"
                       value={giaTri}
@@ -298,8 +298,8 @@ export const ManHinhHanMuc: React.FC<Props> = ({
                       <label className="form-label">Mục tiêu định lượng ({'>'} 0) *</label>
                       <input
                         type="number"
-                        min="0.1"
-                        step="0.5"
+                        min="0.01"
+                        step="any"
                         className="form-input"
                         placeholder="VD: 30"
                         value={giaTri}

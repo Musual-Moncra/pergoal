@@ -431,8 +431,8 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                     <label className="form-label">Ước lượng giờ *</label>
                     <input
                       type="number"
-                      step="0.5"
-                      min="0.1"
+                      step="any"
+                      min="0.01"
                       className="form-input"
                       value={uocLuongGio}
                       onChange={e => setUocLuongGio(parseFloat(e.target.value) || 0)}
@@ -512,8 +512,8 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
                   <label className="form-label">Ước lượng giờ *</label>
                   <input
                     type="number"
-                    step="0.5"
-                    min="0.1"
+                    step="any"
+                    min="0.01"
                     className="form-input"
                     value={editingNV.uocLuongGio}
                     onChange={e => setEditingNV({ ...editingNV, uocLuongGio: parseFloat(e.target.value) || 0 })}

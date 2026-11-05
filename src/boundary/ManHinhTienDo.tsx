@@ -182,7 +182,7 @@ export const ManHinhTienDo: React.FC<Props> = ({
                     <label className="form-label">Số giờ thực tế lần này (h)</label>
                     <input
                       type="number"
-                      step="0.5"
+                      step="any"
                       min="0"
                       className="form-input"
                       value={soGioThucTe}
@@ -291,8 +291,8 @@ export const ManHinhTienDo: React.FC<Props> = ({
                     <label className="form-label">Số lượng thực hiện thêm ({'>'} 0) *</label>
                     <input
                       type="number"
-                      step="0.5"
-                      min="0.1"
+                      step="any"
+                      min="0.01"
                       className="form-input"
                       value={giaTriDinhLuong}
                       onChange={e => setGiaTriDinhLuong(parseFloat(e.target.value) || 0)}
