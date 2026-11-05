@@ -119,10 +119,20 @@ Workflow `.github/workflows/deploy.yml` chạy khi push lên nhánh `main` (ho�
 
 Cấu hình: `vite.config.ts` đặt `base: '/pergoal/'`, vì vậy repository phải có tên `pergoal` (hoặc sửa `base` cho khớp tên repository). Trong **Settings → Pages → Build and deployment**, chọn **Source: GitHub Actions**.
 
-Liên kết bản demo: cập nhật sau khi triển khai thật (không ghi trước).
+- Bản demo: https://musual-moncra.github.io/pergoal/
+- Mã nguồn: https://github.com/Musual-Moncra/pergoal
 
 ## 8. Quy ước
 
 - Lớp nghiệp vụ dùng tên tiếng Việt không dấu đúng theo Bảng thuật ngữ và quy tắc: `MucTieu`, `NhiemVu`, `HanMuc`, `taoMucTieu`, `BoTinhHieuSuat`…
 - Component React dùng tiền tố `ManHinh*`; phần phụ trợ dùng tiếng Anh.
 - Không ghi tên thật, thông tin cá nhân, mật khẩu hay token vào mã nguồn.
+
+## Ảnh chụp
+
+Ảnh từ bản demo với dữ liệu thử.
+
+![Đăng nhập](docs/screenshots/app_01_dang_nhap.png)
+![Cảnh báo vượt hạn mức](docs/screenshots/app_04_canh_bao_vuot_han_muc.png)
+![Báo cáo hiệu suất](docs/screenshots/app_07_bao_cao.png)
+![Giao diện điện thoại](docs/screenshots/app_10_mobile.png)
