@@ -79,9 +79,4 @@ export interface KetQuaKiemTraNangSuat {
 /**
  * Lấy ngày theo múi giờ địa phương định dạng YYYY-MM-DD
  */
-export function ngayDiaPhuong(d = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+export { ngayDiaPhuong } from './NgayThang';

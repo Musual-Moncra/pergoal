@@ -284,8 +284,9 @@ export class NhiemVuController {
 
     // BR11: Chuyển đổi trạng thái theo phần trăm
     if (phanTramChuan === 100) {
+      // NV đã xong giữ nguyên ngày hoàn thành để không biến đúng hạn thành trễ khi ghi thêm
+      if (nv.trangThai !== 'HOAN_THANH') nv.ngayHoanThanh = homNay;
       nv.trangThai = 'HOAN_THANH';
-      nv.ngayHoanThanh = homNay;
     } else if (phanTramChuan > 0) {
       nv.trangThai = 'DANG_LAM';
       nv.ngayHoanThanh = null; // Hạ tiến độ của NV đã xong sẽ mở lại NV đó (BR11)

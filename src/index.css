@@ -421,3 +421,50 @@ th {
 tr:hover td {
   background: #f8fafc;
 }
+
+/* Điện thoại: mỗi nhiệm vụ là một thẻ để không phải vuốt ngang mới thấy tiến độ và nút thao tác */
+@media (max-width: 640px) {
+  .bang-nhiem-vu thead {
+    display: none;
+  }
+  .bang-nhiem-vu,
+  .bang-nhiem-vu tbody,
+  .bang-nhiem-vu tr,
+  .bang-nhiem-vu td {
+    display: block;
+    width: 100%;
+  }
+  .bang-nhiem-vu tr {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .bang-nhiem-vu td {
+    padding: 3px 0;
+    border: none;
+  }
+  .bang-nhiem-vu td:nth-child(n + 2):not(:last-child)::before {
+    display: inline-block;
+    min-width: 76px;
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+  .bang-nhiem-vu td:nth-child(2)::before { content: 'Mục tiêu'; }
+  .bang-nhiem-vu td:nth-child(3)::before { content: 'Hạn chót'; }
+  .bang-nhiem-vu td:nth-child(4)::before { content: 'Ước lượng'; }
+  .bang-nhiem-vu td:nth-child(5)::before { content: 'Ưu tiên'; }
+  .bang-nhiem-vu td:nth-child(6)::before { content: 'Tiến độ'; display: block; }
+  .bang-nhiem-vu td:nth-child(7)::before { content: 'Trạng thái'; }
+  .bang-nhiem-vu td:nth-child(n + 2) > * {
+    display: inline-flex;
+    vertical-align: middle;
+  }
+  .bang-nhiem-vu td:nth-child(6) > * {
+    display: flex;
+  }
+  .bang-nhiem-vu td:last-child > * {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start !important;
+    margin-top: 6px;
+  }
+}

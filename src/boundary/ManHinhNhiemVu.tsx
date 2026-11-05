@@ -232,7 +232,7 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
             <CheckSquare size={24} color="#2563eb" />
             <span>Danh sách Nhiệm vụ ({filteredNhiemVus.length})</span>
           </h2>
-          <p style={{ color: '#64748b', fontSize: '0.85rem' }}>Theo dõi đầu việc, cập nhật tiến độ trực tiếp và kiểm soát hạn mức</p>
+          <p style={{ color: '#64748b', fontSize: '0.85rem' }}>Theo dõi đầu việc, cập nhật tiến độ trực tiếp và kiểm soát mức năng suất</p>
         </div>
         <button
           className="btn btn-primary"
@@ -297,7 +297,7 @@ export const ManHinhNhiemVu: React.FC<Props> = ({
         </div>
       ) : (
         <div className="table-container card" style={{ padding: 0 }}>
-          <table>
+          <table className="bang-nhiem-vu">
             <thead>
               <tr>
                 <th style={{ minWidth: '180px' }}>Tên nhiệm vụ</th>

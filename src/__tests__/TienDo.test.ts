@@ -163,4 +163,18 @@ describe('Cập nhật tiến độ (UC09, BR10, BR11)', () => {
     // (80 + 40) / 2 = 60%
     expect(tienDoMT).toBe(60);
   });
+
+  it('NV đã xong ghi thêm ở 100% vẫn giữ ngày hoàn thành cũ (BR11)', () => {
+    const data = KhoDuLieu.layDuLieu(testUser);
+    const mt = data.mucTieu[0];
+    data.nhiemVu.push({
+      id: 'nv_xong', maMucTieu: mt.id, ten: 'Đã xong', moTa: '', hanChot: mt.ngayKetThuc, uuTien: 'THAP',
+      trangThai: 'HOAN_THANH', uocLuongGio: 1, phanTram: 100, ngayHoanThanh: '2026-01-02', daVuotMucNangSuat: false
+    });
+    KhoDuLieu.luuDuLieu(testUser, data);
+
+    expect(NhiemVuController.capNhatTienDo(testUser, 'nv_xong', 100, 1).success).toBe(true);
+    const nv = KhoDuLieu.layDuLieu(testUser).nhiemVu.find(n => n.id === 'nv_xong')!;
+    expect(nv.ngayHoanThanh).toBe('2026-01-02');
+  });
 });

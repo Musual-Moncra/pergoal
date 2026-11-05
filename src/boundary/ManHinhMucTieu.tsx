@@ -177,10 +177,13 @@ export const ManHinhMucTieu: React.FC<Props> = ({
                             border: 'none',
                             cursor: 'pointer',
                             padding: '1px',
-                            color: star <= mt.capDo ? '#eab308' : '#cbd5e1',
+                            filter: star <= mt.capDo ? 'none' : 'grayscale(1)',
+                            opacity: star <= mt.capDo ? 1 : 0.3,
                             fontSize: '1rem',
                             lineHeight: 1
                           }}
+                          title={`Đặt mức năng suất ${star}`}
+                          aria-label={`Đặt mức năng suất ${star}`}
                         >
                           ⚡
                         </button>
@@ -246,10 +249,10 @@ export const ManHinhMucTieu: React.FC<Props> = ({
                     <button className="btn btn-sm btn-secondary" onClick={() => onSelectMucTieu(mt.id)}>
                       Xem nhiệm vụ
                     </button>
-                    <button className="btn btn-sm btn-secondary" onClick={() => { setThongBaoLoi(null); setEditingMucTieu(mt); }}>
+                    <button className="btn btn-sm btn-secondary" title="Sửa mục tiêu" onClick={() => { setThongBaoLoi(null); setEditingMucTieu(mt); }}>
                       <Edit3 size={14} />
                     </button>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleXoaMucTieu(mt.id, mt.ten)}>
+                    <button className="btn btn-sm btn-danger" title="Xóa mục tiêu" onClick={() => handleXoaMucTieu(mt.id, mt.ten)}>
                       <Trash2 size={14} />
                     </button>
                   </div>
